@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Expense List{% endblock %}
+
+{% block content %}
+<h2>Expenses</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Vendor Name</th>
+            <th>Due Date</th>
+            <th>Amount</th>
+            <th>Date Paid</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for expense in expenses %}
+        <tr>
+            <td>{{ expense.vendor_name }}</td>
+            <td>{{ expense.due_date }}</td>
+            <td>{{ expense.amount }}</td>
+            <td>{{ expense.date_paid }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

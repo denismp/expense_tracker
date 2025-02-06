@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Expense Detail{% endblock %}
+
+{% block content %}
+<h2>Expense Details</h2>
+<p>Vendor Name: {{ expense.vendor_name }}</p>
+<p>Due Date: {{ expense.due_date }}</p>
+<p>Amount: {{ expense.amount }}</p>
+<p>Date Paid: {{ expense.date_paid }}</p>
+<a href="/expenses/">Back to List</a>
+{% endblock %}
