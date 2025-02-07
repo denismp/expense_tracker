@@ -20,6 +20,10 @@ def add_expense(request):
         if form.is_valid():
             expense = form.save(commit=False)
             expense.user = request.user
+
+            # ✅ Debugging line to verify frequency
+            print(f"Selected Frequency: {form.cleaned_data['frequency']}")
+
             expense.save()
             return redirect('expense_list')
     else:
@@ -36,6 +40,7 @@ def expense_detail(request, pk):
 @login_required
 def edit_expense(request, pk):
     expense = get_object_or_404(Expense, pk=pk, user=request.user)
+    print(f"Loaded Frequency: {expense.frequency}")  # ✅ Debugging line
     if request.method == 'POST':
         form = ExpenseForm(request.POST, instance=expense)
         if form.is_valid():

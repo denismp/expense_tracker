@@ -3,10 +3,14 @@
 {% block title %}Expense Detail{% endblock %}
 
 {% block content %}
-<h2>Expense Details</h2>
-<p>Vendor Name: {{ expense.vendor_name }}</p>
-<p>Due Date: {{ expense.due_date }}</p>
-<p>Amount: {{ expense.amount }}</p>
-<p>Date Paid: {{ expense.date_paid }}</p>
-<a href="/expenses/">Back to List</a>
+<div class="card p-4 shadow-sm mt-4">
+    <h2 class="mb-4">Expense Details</h2>
+    <p><strong>Vendor Name:</strong> {{ expense.vendor_name }}</p>
+    <p><strong>Due Date:</strong> {{ expense.due_date }}</p>
+    <p><strong>Amount:</strong> ${{ expense.amount }}</p>
+    <p><strong>Date Paid:</strong> {{ expense.date_paid|default:"Not Paid" }}</p>
+    <p><strong>Frequency:</strong> {{ expense.frequency }}</p>  <!-- ✅ Added Frequency Field -->
+
+    <a href="{% url 'expense_list' %}" class="btn btn-secondary mt-3">Back to List</a>  <!-- ✅ Improved navigation -->
+</div>
 {% endblock %}

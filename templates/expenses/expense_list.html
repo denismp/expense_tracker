@@ -12,6 +12,7 @@
             <th>Due Date</th>
             <th>Amount</th>
             <th>Date Paid</th>
+            <th>Frequency</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -22,6 +23,7 @@
             <td>{{ expense.due_date }}</td>
             <td>${{ expense.amount }}</td>
             <td>{{ expense.date_paid|default:"Not Paid" }}</td>
+            <td>{{ expense.frequency }}</td>
             <td>
                 <a href="{% url 'edit_expense' expense.pk %}" class="btn btn-sm btn-warning">Edit</a>
                 <a href="{% url 'delete_expense' expense.pk %}" class="btn btn-sm btn-danger">Delete</a>
