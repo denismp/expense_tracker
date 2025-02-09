@@ -1,0 +1,7 @@
+# Include all template files
+recursive-include accounts/templates *.html
+recursive-include expenses/templates *.html
+recursive-include templates *.html
+
+# Include static files (if any)
+recursive-include static *
