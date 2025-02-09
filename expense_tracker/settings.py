@@ -14,7 +14,14 @@ import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# BASE_DIR = Path(__file__).resolve().parent.parent
+# Check if running from site-packages (installed via setup.py)
+try:
+    BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
+    if 'site-packages' in str(BASE_DIR):
+        BASE_DIR = Path(__file__).resolve().parent  # Adjust for installed package
+except Exception:
+    BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
@@ -38,8 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "accounts",
-    "expenses"
+    "apps.accounts",
+    "apps.expenses",
 ]
 
 MIDDLEWARE = [
@@ -126,3 +133,4 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.CustomUser'
 LOGIN_REDIRECT_URL = '/expenses/'
+TEMPLATES[0]['OPTIONS']['debug'] = True

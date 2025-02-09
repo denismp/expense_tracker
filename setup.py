@@ -1,14 +1,15 @@
 from setuptools import setup, find_packages
-import os
-
-# Set the default settings module
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'expense_tracker.settings')
 
 setup(
     name='expense_tracker',
     version='1.0.0',
-    packages=find_packages(),
+    packages=find_packages(include=['expense_tracker', 'expense_tracker.*', 'apps.*']),  # ✅ Include the apps namespace
     include_package_data=True,
+    package_data={
+        'apps.accounts': ['templates/accounts/*.html'],     # ✅ Use the full namespace
+        'apps.expenses': ['templates/expenses/*.html'],
+        '': ['templates/*.html'],
+    },
     install_requires=[
         'Django>=4.0',
         'pandas',
@@ -19,11 +20,5 @@ setup(
             'expense_tracker=django.core.management:execute_from_command_line',
         ],
     },
-    classifiers=[
-        'Programming Language :: Python :: 3',
-        'Framework :: Django',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
-    ],
-    python_requires='>=3.8',
+    zip_safe=False,
 )
