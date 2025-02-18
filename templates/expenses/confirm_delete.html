@@ -8,12 +8,12 @@
         <h2 class="text-danger">Are You Sure You Want to Delete This Expense?</h2>
         <p><strong>Vendor:</strong> {{ expense.vendor_name }}</p>
         <p><strong>Amount:</strong> ${{ expense.amount }}</p>
-        <p><strong>Due Date:</strong> {{ expense.due_date }}</p>
+        <p><strong>Due Day Of Month:</strong> {{ expense.due_day_of_month }}</p>
 
         <form method="post">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger">Yes, Delete</button>
-            <a href="{% url 'expense_list' %}" class="btn btn-secondary">Cancel</a>
+            <a href="{% url 'expenses:expense_list' %}" class="btn btn-secondary">Cancel</a>
         </form>
     </div>
 </div>

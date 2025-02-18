@@ -12,8 +12,8 @@
         {{ form.vendor_name }}
     </div>
     <div class="mb-3">
-        <label for="id_due_date" class="form-label">Due Date:</label>
-        {{ form.due_date }}
+        <label for="id_due_day_of_month" class="form-label">Due Day Of Month:</label>
+        {{ form.due_day_of_month }}
     </div>
     <div class="mb-3">
         <label for="id_amount" class="form-label">Amount:</label>
@@ -28,6 +28,6 @@
         {{ form.frequency }}  <!-- ✅ This ensures Django handles the selected value -->
     </div>
     <button type="submit" class="btn btn-primary">Save Expense</button>
-    <a href="{% url 'expense_list' %}" class="btn btn-secondary">Cancel</a>
+    <a href="{% url 'expenses:expense_list' %}" class="btn btn-secondary">Cancel</a>
 </form>
 {% endblock %}

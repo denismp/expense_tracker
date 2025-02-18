@@ -14,12 +14,24 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+# # from django.contrib import admin
+# # from django.urls import path
+
+# # urlpatterns = [
+# #     path('admin/', admin.site.urls),
+# # ]
+# # expense_tracker/urls.py
 # from django.contrib import admin
-# from django.urls import path
+# from django.urls import path, include
+# from django.shortcuts import redirect
 
 # urlpatterns = [
 #     path('admin/', admin.site.urls),
+#     path('accounts/', include('accounts.urls')),
+#     path('expenses/', include('expenses.urls')),
+#     path('', lambda request: redirect('expense_list', permanent=False)),  # Redirect root URL
 # ]
+
 # expense_tracker/urls.py
 from django.contrib import admin
 from django.urls import path, include
@@ -27,7 +39,7 @@ from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', include('accounts.urls')),
-    path('expenses/', include('expenses.urls')),
-    path('', lambda request: redirect('expense_list', permanent=False)),  # Redirect root URL
+    path('accounts/', include('apps.accounts.urls', namespace="accounts")),  # ✅ Correct namespacing
+    path('expenses/', include('apps.expenses.urls', namespace="expenses")),  # ✅ Correct namespacing
+    path('', lambda request: redirect('expenses:expense_list', permanent=False)),  # ✅ Use namespaced URL
 ]

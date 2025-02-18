@@ -1,4 +1,4 @@
-{% load static %}  <!-- This should be the first line -->
+{% load static %}  <!-- Ensure this is the first line -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -16,19 +16,19 @@
     <header class="bg-dark text-white py-3">
         <nav class="container d-flex justify-content-between">
             <div>
-                <a href="{% url 'expense_list' %}" class="text-white me-3">Home</a>
-                <a href="{% url 'add_expense' %}" class="text-white me-3">Add Expense</a>
-                <a href="{% url 'import_expenses' %}" class="text-white me-3">Import Expenses</a>
-                <a href="{% url 'export_expenses' %}" class="text-white me-3">Export Expenses</a>
+                <a href="{% url 'expenses:expense_list' %}" class="text-white me-3">Home</a>
+                <a href="{% url 'expenses:add_expense' %}" class="text-white me-3">Add Expense</a>
+                <a href="{% url 'expenses:import_expenses' %}" class="text-white me-3">Import Expenses</a>
+                <a href="{% url 'expenses:export_expenses' %}" class="text-white me-3">Export Expenses</a>
             </div>
             <div>
                 {% if user.is_authenticated %}
-                    <form action="{% url 'logout' %}" method="post" class="d-inline">
+                    <form action="{% url 'accounts:logout' %}" method="post" class="d-inline">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-outline-light">Logout</button>
                     </form>
                 {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-sm btn-light">Login</a>
+                    <a href="{% url 'accounts:login' %}" class="btn btn-sm btn-light">Login</a>
                 {% endif %}
             </div>
         </nav>

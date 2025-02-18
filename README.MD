@@ -76,7 +76,7 @@ Login using the superuser credentials.
 
 ## 📥 **Import/Export Expenses**
 
-- **Import:** Upload Excel files with the format: `vendor_name`, `due_date`, `amount`, `date_paid`, `frequency`.
+- **Import:** Upload Excel files with the format: `vendor_name`, `due_day_of_month`, `amount`, `date_paid`, `frequency`.
 - **Export:** Download current expense data as an Excel file.
 
 ---
