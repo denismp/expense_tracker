@@ -7,11 +7,34 @@ from .forms import ExpenseForm
 from .utils import import_expenses_from_excel, export_expenses_to_excel
 
 
+# @login_required
+# def expense_list(request):
+#     """ View to list all expenses for the logged-in user """
+#     expenses = Expense.objects.filter(user=request.user)
+#     return render(request, 'expenses/expense_list.html', {'expenses': expenses})
+
+# from django.shortcuts import render
+# from django.contrib.auth.decorators import login_required
+# from .models import Expense
+
 @login_required
 def expense_list(request):
-    """ View to list all expenses for the logged-in user """
-    expenses = Expense.objects.filter(user=request.user)
-    return render(request, 'expenses/expense_list.html', {'expenses': expenses})
+    # Get sorting parameters from the request
+    sort_by = request.GET.get('sort', 'vendor_name')  # Default sort field
+    sort_order = request.GET.get('order', 'asc')
+
+    # Determine sorting direction
+    if sort_order == 'desc':
+        sort_by = f'-{sort_by}'
+
+    # Retrieve expenses and apply sorting
+    expenses = Expense.objects.filter(user=request.user).order_by(sort_by)
+
+    return render(request, 'expenses/expense_list.html', {
+        'expenses': expenses,
+        'current_sort': request.GET.get('sort', 'vendor_name'),
+        'current_order': request.GET.get('order', 'asc'),
+    })
 
 
 @login_required
