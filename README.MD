@@ -24,14 +24,38 @@ git clone https://github.com/your-repo/expense-tracker.git
 cd expense-tracker
 ```
 
-### **2. Create a Virtual Environment**
+### **2. Run the Setup Script (Mac/Linux)**
+
+```bash
+bash setup_and_run_mac.sh
+```
+
+### **3. Run the Setup Script (Windows)**
+
+```bat
+setup_and_run_windows.bat
+```
+
+The setup scripts will:
+- Create a virtual environment
+- Install dependencies
+- Apply migrations
+- Start the Django development server
+
+If you prefer manual setup, follow the instructions below.
+
+---
+
+## 🔄 **Manual Setup**
+
+### **1. Create a Virtual Environment**
 
 ```bash
 python -m venv venv
 source venv/bin/activate   # On Windows: venv\Scripts\activate
 ```
 
-### **3. Install Dependencies**
+### **2. Install Dependencies**
 
 ```bash
 pip install -r requirements.txt
@@ -43,14 +67,14 @@ If `requirements.txt` is missing, install the required packages manually:
 pip install django pandas openpyxl
 ```
 
-### **4. Apply Migrations**
+### **3. Apply Migrations**
 
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-### **5. Create a Superuser** (for Admin Panel)
+### **4. Create a Superuser** (for Admin Panel)
 
 ```bash
 python manage.py createsuperuser
@@ -58,7 +82,7 @@ python manage.py createsuperuser
 
 Enter your preferred username, email, and password when prompted.
 
-### **6. Run the Development Server**
+### **5. Run the Development Server**
 
 ```bash
 python manage.py runserver
@@ -66,15 +90,36 @@ python manage.py runserver
 
 Go to [http://127.0.0.1:8000/](http://127.0.0.1:8000/) to access the application.
 
-
-### **7. Access the Django Admin Panel**
+### **6. Access the Django Admin Panel**
 
 Visit: [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)  
 Login using the superuser credentials.
 
 ---
 
-## 📥 **Import/Export Expenses**
+## 👅 **Setup and Run Scripts**
+
+### **For Mac/Linux Users**
+Run the `setup_and_run_mac.sh` script:
+```bash
+bash setup_and_run_mac.sh
+```
+
+### **For Windows Users**
+Run the `setup_and_run_windows.bat` script:
+```bat
+setup_and_run_windows.bat
+```
+
+These scripts will:
+- Set up the virtual environment
+- Install all dependencies
+- Apply migrations
+- Start the Django development server automatically
+
+---
+
+## 👅 **Import/Export Expenses**
 
 - **Import:** Upload Excel files with the format: `vendor_name`, `due_day_of_month`, `amount`, `date_paid`, `frequency`.
 - **Export:** Download current expense data as an Excel file.
@@ -86,7 +131,6 @@ Login using the superuser credentials.
 - Add/Delete users
 - Force password changes
 - Manage expenses from the Admin Panel
-
 
 ## 🚀 **Future Improvements**
 
@@ -114,7 +158,6 @@ Login using the superuser credentials.
   python manage.py migrate
   ```
 
-
 ## 👩‍💻 **Contributing**
 
 1. Fork the repository
@@ -125,7 +168,7 @@ Login using the superuser credentials.
 
 ---
 
-## 📄 **License**
+## 📝 **License**
 
 This project is licensed under the MIT License.
 
