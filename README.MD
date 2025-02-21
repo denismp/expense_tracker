@@ -24,29 +24,25 @@ git clone https://github.com/your-repo/expense-tracker.git
 cd expense-tracker
 ```
 
-### **2. Run the Setup Script (Mac/Linux)**
+### **2. Install the Package**
+
+Run the following command to install the package into your Python environment:
 
 ```bash
-bash setup_and_run_mac.sh
+pip install .
 ```
 
-### **3. Run the Setup Script (Windows)**
+After installation, run the following commands to set up the database:
 
-```bat
-setup_and_run_windows.bat
+```bash
+expense_tracker makemigrations
+expense_tracker migrate
+expense_tracker createsuperuser
 ```
-
-The setup scripts will:
-- Create a virtual environment
-- Install dependencies
-- Apply migrations
-- Start the Django development server
-
-If you prefer manual setup, follow the instructions below.
 
 ---
 
-## 🔄 **Manual Setup**
+## 🔄 **Manual Setup (Alternative Method)**
 
 ### **1. Create a Virtual Environment**
 
@@ -94,7 +90,6 @@ Go to [http://127.0.0.1:8000/](http://127.0.0.1:8000/) to access the application
 
 Visit: [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)  
 Login using the superuser credentials.
-
 ---
 
 ## 👅 **Setup and Run Scripts**
@@ -104,7 +99,6 @@ Run the `setup_and_run_mac.sh` script:
 ```bash
 bash setup_and_run_mac.sh
 ```
-
 ### **For Windows Users**
 Run the `setup_and_run_windows.bat` script:
 ```bat
@@ -119,7 +113,7 @@ These scripts will:
 
 ---
 
-## 👅 **Import/Export Expenses**
+## 📥 **Import/Export Expenses**
 
 - **Import:** Upload Excel files with the format: `vendor_name`, `due_day_of_month`, `amount`, `date_paid`, `frequency`.
 - **Export:** Download current expense data as an Excel file.
@@ -175,4 +169,3 @@ This project is licensed under the MIT License.
 ---
 
 **Happy Expense Tracking! 🚀💸**
-
