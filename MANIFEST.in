@@ -1,7 +1,17 @@
 # Include all template files
-recursive-include accounts/templates *.html
-recursive-include expenses/templates *.html
+# recursive-include accounts/templates *.html
+# recursive-include expenses/templates *.html
+# recursive-include templates *.html
+
+recursive-include apps *
+recursive-include expense_tracker *
 recursive-include templates *.html
+recursive-include static *
+recursive-include migrations *
+
+include expense_tracker/apps/*
+recursive-include expense_tracker/apps *.py
+recursive-include expense_tracker/apps *.html
 
 # Include static files (if any)
 recursive-include static *

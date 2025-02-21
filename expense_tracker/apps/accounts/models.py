@@ -11,6 +11,7 @@ from django.db import models
 
 
 class CustomUser(AbstractUser):
+    print("Loading expense_tracker.apps.accounts.models")
     force_password_change = models.BooleanField(default=False)
 
     groups = models.ManyToManyField(

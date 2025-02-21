@@ -7,6 +7,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from .forms import CustomUserCreationForm
 
+print("Loading expense_tracker.apps.accounts.views")
+
 
 def register(request):
     if request.method == 'POST':
