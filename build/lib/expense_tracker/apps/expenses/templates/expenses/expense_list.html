@@ -40,7 +40,7 @@
         {% for expense in expenses %}
         <tr>
             <td>{{ expense.vendor_name }}</td>
-            <td>{{ expense.due_day_of_month }}</td>
+            <td>{{ expense.display_due_date }}</td>
             <td>${{ expense.amount }}</td>
             <td>{{ expense.date_paid|default_if_none:"Not Paid" }}</td>
             <td>{{ expense.frequency }}</td>
@@ -58,9 +58,30 @@
         </tr>
         {% endfor %}
     </tbody>
+    <tfoot>
+        <tr class="table-success">
+            <td colspan="2" class="fw-bold text-end">Total Monthly Expenses:</td>
+            <td class="fw-bold fs-5">${{ total_monthly }}</td>
+            <td colspan="3"></td>
+        </tr>
+        <tr class="table-info">
+            <td colspan="2" class="fw-bold text-end">Total Quarterly Expenses:</td>
+            <td class="fw-bold fs-5">${{ total_quarterly }}</td>
+            <td colspan="3"></td>
+        </tr>
+        <tr class="table-warning">
+            <td colspan="2" class="fw-bold text-end">Total Yearly Expenses:</td>
+            <td class="fw-bold fs-5">${{ total_yearly }}</td>
+            <td colspan="3"></td>
+        </tr>
+        <tr class="table-primary">
+            <td colspan="2" class="fw-bold text-end">Grand Total:</td>
+            <td class="fw-bold fs-4">${{ grand_total }}</td>
+            <td colspan="3"></td>
+        </tr>
+    </tfoot>
 </table>
 
-<!-- Add Expense Button -->
 <div class="mt-4">
     <a href="{% url 'expenses:add_expense' %}" class="btn btn-primary">Add Expense</a>
 </div>
