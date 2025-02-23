@@ -40,14 +40,30 @@ def expense_list(request):
     #     'current_order': request.GET.get('order', 'asc'),
     # })
 
+    # # Calculate totals based on frequency
+    # total_amount = sum(exp.amount for exp in expenses)
+    # total_quarterly = sum(exp.amount for exp in expenses if exp.frequency == "Quarterly")
+    # total_yearly = sum(exp.amount for exp in expenses if exp.frequency == "Yearly")
+
+    # return render(request, 'expenses/expense_list.html', {
+    #     'expenses': expenses,
+    #     'total_amount': total_amount,
+    #     'total_quarterly': total_quarterly,
+    #     'total_yearly': total_yearly,
+    #     'current_sort': request.GET.get('sort', 'vendor_name'),
+    #     'current_order': request.GET.get('order', 'asc'),
+    # })
+
     # Calculate totals based on frequency
-    total_amount = sum(exp.amount for exp in expenses)
+    total_monthly = sum(exp.amount for exp in expenses if exp.frequency == "Monthly")
     total_quarterly = sum(exp.amount for exp in expenses if exp.frequency == "Quarterly")
     total_yearly = sum(exp.amount for exp in expenses if exp.frequency == "Yearly")
+    grand_total = total_monthly + total_quarterly + total_yearly  # Sum of all totals
 
     return render(request, 'expenses/expense_list.html', {
         'expenses': expenses,
-        'total_amount': total_amount,
+        'grand_total': grand_total,
+        'total_monthly': total_monthly,
         'total_quarterly': total_quarterly,
         'total_yearly': total_yearly,
         'current_sort': request.GET.get('sort', 'vendor_name'),
