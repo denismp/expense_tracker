@@ -30,8 +30,12 @@ def expense_list(request):
     # Retrieve expenses and apply sorting
     expenses = Expense.objects.filter(user=request.user).order_by(sort_by)
 
+    # Calculate total expenses
+    total_amount = sum(expense.amount for expense in expenses)
+
     return render(request, 'expenses/expense_list.html', {
         'expenses': expenses,
+        'total_amount': total_amount,  # ✅ Include total expenses
         'current_sort': request.GET.get('sort', 'vendor_name'),
         'current_order': request.GET.get('order', 'asc'),
     })
