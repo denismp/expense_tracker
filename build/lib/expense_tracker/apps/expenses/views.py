@@ -1,4 +1,4 @@
-# expenses/views.py
+# apps/expenses/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
@@ -6,16 +6,6 @@ from .models import Expense
 from .forms import ExpenseForm
 from .utils import import_expenses_from_excel, export_expenses_to_excel
 
-
-# @login_required
-# def expense_list(request):
-#     """ View to list all expenses for the logged-in user """
-#     expenses = Expense.objects.filter(user=request.user)
-#     return render(request, 'expenses/expense_list.html', {'expenses': expenses})
-
-# from django.shortcuts import render
-# from django.contrib.auth.decorators import login_required
-# from .models import Expense
 
 @login_required
 def expense_list(request):
@@ -30,35 +20,19 @@ def expense_list(request):
     # Retrieve expenses and apply sorting
     expenses = Expense.objects.filter(user=request.user).order_by(sort_by)
 
-    # # Calculate total expenses
-    # total_amount = sum(expense.amount for expense in expenses)
-
-    # return render(request, 'expenses/expense_list.html', {
-    #     'expenses': expenses,
-    #     'total_amount': total_amount,  # ✅ Include total expenses
-    #     'current_sort': request.GET.get('sort', 'vendor_name'),
-    #     'current_order': request.GET.get('order', 'asc'),
-    # })
-
-    # # Calculate totals based on frequency
-    # total_amount = sum(exp.amount for exp in expenses)
-    # total_quarterly = sum(exp.amount for exp in expenses if exp.frequency == "Quarterly")
-    # total_yearly = sum(exp.amount for exp in expenses if exp.frequency == "Yearly")
-
-    # return render(request, 'expenses/expense_list.html', {
-    #     'expenses': expenses,
-    #     'total_amount': total_amount,
-    #     'total_quarterly': total_quarterly,
-    #     'total_yearly': total_yearly,
-    #     'current_sort': request.GET.get('sort', 'vendor_name'),
-    #     'current_order': request.GET.get('order', 'asc'),
-    # })
+    # Format due date for display
+    for expense in expenses:
+        if expense.frequency == 'Monthly':
+            expense.display_due_date = str(expense.due_day_of_month)  # e.g., "15"
+        else:  # Quarterly or Yearly
+            month_name = dict(Expense.MONTH_CHOICES).get(expense.due_month, 'Unknown')
+            expense.display_due_date = f"{month_name} {expense.due_day_of_month}"  # e.g., "March 15"
 
     # Calculate totals based on frequency
     total_monthly = sum(exp.amount for exp in expenses if exp.frequency == "Monthly")
     total_quarterly = sum(exp.amount for exp in expenses if exp.frequency == "Quarterly")
     total_yearly = sum(exp.amount for exp in expenses if exp.frequency == "Yearly")
-    grand_total = total_monthly + total_quarterly + total_yearly  # Sum of all totals
+    grand_total = total_monthly + total_quarterly + total_yearly
 
     return render(request, 'expenses/expense_list.html', {
         'expenses': expenses,
@@ -73,71 +47,72 @@ def expense_list(request):
 
 @login_required
 def add_expense(request):
-    """ View to add a new expense """
     if request.method == 'POST':
         form = ExpenseForm(request.POST)
         if form.is_valid():
             expense = form.save(commit=False)
             expense.user = request.user
+            # Ensure due_month is None for Monthly expenses
+            if expense.frequency == 'Monthly':
+                expense.due_month = None
+            elif not expense.due_month:  # Validate Quarterly/Yearly
+                form.add_error('due_month', 'Month is required for Quarterly or Yearly expenses.')
+                return render(request, 'expenses/expense_form.html', {'form': form})
             expense.save()
-            return redirect('expenses:expense_list')  # ✅ Fixed namespace reference
+            return redirect('expenses:expense_list')
     else:
         form = ExpenseForm()
-
-    return render(request, 'expenses/expense_form.html', {'form': form})  # ✅ Ensure response for GET request
+    return render(request, 'expenses/expense_form.html', {'form': form})
 
 
 @login_required
+def edit_expense(request, pk):
+    expense = get_object_or_404(Expense, pk=pk, user=request.user)
+    if request.method == 'POST':
+        form = ExpenseForm(request.POST, instance=expense)
+        if form.is_valid():
+            expense = form.save(commit=False)
+            # Ensure due_month is None for Monthly expenses
+            if expense.frequency == 'Monthly':
+                expense.due_month = None
+            elif not expense.due_month:
+                form.add_error('due_month', 'Month is required for Quarterly or Yearly expenses.')
+                return render(request, 'expenses/expense_form.html', {'form': form})
+            expense.save()
+            return redirect('expenses:expense_list')
+    else:
+        form = ExpenseForm(instance=expense)
+    return render(request, 'expenses/expense_form.html', {'form': form})
+
+
+# Other views (expense_detail, delete_expense, import_expenses, export_expenses) unchanged
+@login_required
 def expense_detail(request, pk):
-    """ View to display a specific expense detail """
     expense = get_object_or_404(Expense, pk=pk, user=request.user)
     return render(request, 'expenses/expense_detail.html', {'expense': expense})
 
 
 @login_required
-def edit_expense(request, pk):
-    """ View to edit an existing expense """
-    expense = get_object_or_404(Expense, pk=pk, user=request.user)
-
-    if request.method == 'POST':
-        form = ExpenseForm(request.POST, instance=expense)
-        if form.is_valid():
-            form.save()
-            return redirect('expenses:expense_list')  # ✅ Fixed namespace reference
-    else:
-        form = ExpenseForm(instance=expense)
-
-    return render(request, 'expenses/expense_form.html', {'form': form})
-
-
-@login_required
 def delete_expense(request, pk):
-    """ View to delete an expense """
     expense = get_object_or_404(Expense, pk=pk, user=request.user)
-
     if request.method == 'POST':
         expense.delete()
-        return redirect('expenses:expense_list')  # ✅ Fixed namespace reference
-
+        return redirect('expenses:expense_list')
     return render(request, 'expenses/confirm_delete.html', {'expense': expense})
 
 
 @login_required
 def import_expenses(request):
-    """ View to import expenses from an Excel file """
     if request.method == 'POST' and request.FILES.get('file'):
         file = request.FILES['file']
         import_expenses_from_excel(file, request.user)
-        return redirect('expenses:expense_list')  # ✅ Fixed namespace reference
-
+        return redirect('expenses:expense_list')
     return render(request, 'expenses/import_expenses.html')
 
 
 @login_required
 def export_expenses(request):
-    """ View to export expenses to an Excel file and return as a download """
     file_path = export_expenses_to_excel(request.user)
-
     with open(file_path, 'rb') as file:
         response = HttpResponse(
             file.read(),
