@@ -52,10 +52,9 @@ def add_expense(request):
         if form.is_valid():
             expense = form.save(commit=False)
             expense.user = request.user
-            # Ensure due_month is None for Monthly expenses
             if expense.frequency == 'Monthly':
                 expense.due_month = None
-            elif not expense.due_month:  # Validate Quarterly/Yearly
+            elif not expense.due_month:
                 form.add_error('due_month', 'Month is required for Quarterly or Yearly expenses.')
                 return render(request, 'expenses/expense_form.html', {'form': form})
             expense.save()
@@ -66,13 +65,18 @@ def add_expense(request):
 
 
 @login_required
+def expense_detail(request, pk):
+    expense = get_object_or_404(Expense, pk=pk, user=request.user)
+    return render(request, 'expenses/expense_detail.html', {'expense': expense})
+
+
+@login_required
 def edit_expense(request, pk):
     expense = get_object_or_404(Expense, pk=pk, user=request.user)
     if request.method == 'POST':
         form = ExpenseForm(request.POST, instance=expense)
         if form.is_valid():
             expense = form.save(commit=False)
-            # Ensure due_month is None for Monthly expenses
             if expense.frequency == 'Monthly':
                 expense.due_month = None
             elif not expense.due_month:
@@ -83,13 +87,6 @@ def edit_expense(request, pk):
     else:
         form = ExpenseForm(instance=expense)
     return render(request, 'expenses/expense_form.html', {'form': form})
-
-
-# Other views (expense_detail, delete_expense, import_expenses, export_expenses) unchanged
-@login_required
-def expense_detail(request, pk):
-    expense = get_object_or_404(Expense, pk=pk, user=request.user)
-    return render(request, 'expenses/expense_detail.html', {'expense': expense})
 
 
 @login_required
@@ -105,18 +102,20 @@ def delete_expense(request, pk):
 def import_expenses(request):
     if request.method == 'POST' and request.FILES.get('file'):
         file = request.FILES['file']
-        import_expenses_from_excel(file, request.user)
-        return redirect('expenses:expense_list')
+        try:
+            import_expenses_from_excel(file, request.user)
+            return redirect('expenses:expense_list')  # Redirect to expense list on success
+        except Exception as e:
+            return render(request, 'expenses/import_expenses.html', {'error': str(e)})
     return render(request, 'expenses/import_expenses.html')
 
 
 @login_required
 def export_expenses(request):
-    file_path = export_expenses_to_excel(request.user)
-    with open(file_path, 'rb') as file:
-        response = HttpResponse(
-            file.read(),
-            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        response["Content-Disposition"] = 'attachment; filename="expenses.xlsx"'
-        return response
+    excel_data = export_expenses_to_excel(request.user)
+    response = HttpResponse(
+        excel_data.getvalue(),  # Get the bytes from the BytesIO object
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = f'attachment; filename="expenses_{request.user.username}.xlsx"'
+    return response
