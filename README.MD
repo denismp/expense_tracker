@@ -119,6 +119,68 @@ These scripts will:
 - **Export:** Download current expense data as an Excel file.
 
 ---
+## 📥 **Importing and Exporting Expenses
+The Expense Tracker Application allows users to easily import and export their expense data using Excel files. This functionality is designed to be user-friendly and secure, with all file operations handled directly from the user's local computer, ensuring no files are stored on the server.
+
+### Exporting Expenses
+
+#### How to Export:
+- **Log in to the application** and navigate to `/expenses/export/` (Export Expenses tab).  
+- **Click the "Export" button** to initiate the download of your expense data.  
+
+## 📂 File Format  
+The exported **Excel file** contains your expense data with the following columns:  
+
+- **Vendor Name**: The name of the vendor.  
+- **Due Date**: Formatted based on the expense frequency:  
+  - **Monthly**: Day of the month (e.g., `15`).  
+  - **Quarterly/Yearly**: Month and day (e.g., `March 15`).  
+- **Amount**: The expense amount (e.g., `100.00`).  
+- **Date Paid**: The date the expense was paid, if applicable (e.g., `2025-01-01`).  
+- **Frequency**: The frequency of the expense (`Monthly`, `Quarterly`, `Yearly`).  
+
+## ⚙️ Technical Details  
+- The **Excel file is generated in memory** using Python's `BytesIO` and `pandas` libraries.  
+- It is sent to your browser as an **HTTP response** with the `Content-Disposition: attachment` header, prompting an **automatic download** to your local machine (typically to your **Downloads folder**).  
+- **No files are saved on the server**, ensuring **efficiency and privacy**.  
+### Importing Expenses
+
+#### How to Import:
+- **Log in to the application** and navigate to `/expenses/import/` (Import Expenses tab).  
+- **Use the form to upload an Excel file** from your local computer.  
+- After uploading, the app **processes the file and adds valid expenses** to your list, then redirects you to the **expense list page**.  
+
+## 📂 File Format Requirements  
+Your **Excel file** must include the following required columns:  
+
+- **Vendor Name**: The name of the vendor (**string**).  
+- **Due Date**:  
+  - **For Monthly expenses**: A number representing the **day of the month** (e.g., `"15"`).  
+  - **For Quarterly or Yearly expenses**: `"Month Day"` format (e.g., `"March 15"`).  
+- **Amount**: The expense amount (**decimal**, e.g., `"100.00"`).  
+- **Frequency**: The frequency of the expense (`"Monthly"`, `"Quarterly"`, or `"Yearly"`).  
+
+### 📝 Optional Column  
+- **Date Paid**: The date the expense was paid (**e.g., `"2025-01-01"`**).  
+##### Example of a valid Excel file:
+```
+Vendor Name | Due Date    | Amount | Date Paid  | Frequency
+Vendor A    | 15          | 100.00 | 2025-01-01 | Monthly
+Vendor B    | March 20    | 200.00 | 2025-03-20 | Quarterly
+Vendor C    | December 25 | 300.00 | 2025-12-25 | Yearly
+```
+#### Processing and Validation:
+- The app **reads the uploaded file in memory** using `pandas`.  
+- Each row is **validated**:  
+  - **Missing or invalid data** (e.g., incorrect Due Date format based on frequency) is **skipped**, with debug logs recorded.  
+  - **Valid expenses are added** to the database.  
+  - **Duplicates** (based on vendor name for the user) are **skipped** to prevent overwriting.  
+
+## ⚠️ Error Handling  
+- If the file is **missing required columns** or contains **invalid data**, an **error message** is displayed on the import page (e.g., `"Missing required columns: vendor_name"`).  
+- Ensure your file **matches the required format** to avoid import errors.  
+
+---
 
 ## ✅ **Admin Features**
 
