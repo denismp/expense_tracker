@@ -12,7 +12,7 @@ def import_expenses_from_excel(file, usr):
     # Mapping Excel column names to database fields
     column_mapping = {
         'Vendor Name': 'vendor_name',
-        'Due Date': 'due_date',  # Updated to Due Date for combined month/day
+        'Due Date': 'due_date',
         'Amount': 'amount',
         'Date Paid': 'date_paid',
         'Frequency': 'frequency'
@@ -20,7 +20,7 @@ def import_expenses_from_excel(file, usr):
 
     # Rename columns to match the database model fields
     df.rename(columns=column_mapping, inplace=True)
-    print(f"Renamed columns: {df.columns.tolist()}")  # ✅ Debug
+    print(f"Renamed columns: {df.columns.to_list()}")  # ✅ Debug
 
     # Validate required columns
     required_columns = ['vendor_name', 'due_date', 'amount', 'frequency']
@@ -38,29 +38,19 @@ def import_expenses_from_excel(file, usr):
         due_date_str = str(row.get('due_date', '')).strip()
         frequency = row.get('frequency', 'Monthly')
 
-        # Parse due_date based on frequency
+        # Parse due_date to get day of month, handling both number and "Month Day" format
         if pd.isna(due_date_str) or due_date_str == '':
             print(f"Skipping row {index + 1} due to missing due_date.")  # ✅ Debug
             continue
 
-        if frequency == 'Monthly':
-            # Expect just a day number (e.g., "15")
+        try:
+            due_day_of_month = int(due_date_str)
+        except ValueError:
             try:
-                due_day_of_month = int(due_date_str)
-                due_month = None
-            except ValueError:
-                print(f"Invalid due_date '{due_date_str}' for Monthly in row {index + 1}, skipping.")  # ✅ Debug
-                continue
-        else:  # Quarterly or Yearly
-            # Expect "Month Day" format (e.g., "March 15")
-            try:
-                month_name, day = due_date_str.split()
-                due_day_of_month = int(day)
-                due_month = {v: k for k, v in Expense.MONTH_CHOICES}.get(month_name.capitalize())
-                if due_month is None:
-                    raise ValueError(f"Invalid month name: {month_name}")
-            except (ValueError, AttributeError) as e:
-                print(f"Invalid due_date '{due_date_str}' for {frequency} in row {index + 1}, skipping: {e}")  # ✅ Debug
+                month_name, day_str = due_date_str.split()
+                due_day_of_month = int(day_str)
+            except (ValueError, AttributeError):
+                print(f"Invalid due_date '{due_date_str}' in row {index + 1}, skipping.")
                 continue
 
         # Validate critical data
@@ -78,11 +68,10 @@ def import_expenses_from_excel(file, usr):
             print(f"Duplicate found for vendor '{row['vendor_name']}', skipping.")  # ✅ Debug
             continue
 
-        # Create Expense
+        # Create Expense without due_month
         expense = Expense.objects.create(
             vendor_name=row['vendor_name'],
             due_day_of_month=due_day_of_month,
-            due_month=due_month,
             amount=row['amount'],
             date_paid=date_paid if not pd.isna(date_paid) else None,
             frequency=frequency,
@@ -92,14 +81,12 @@ def import_expenses_from_excel(file, usr):
 
 
 def export_expenses_to_excel(user):
+    # Retrieve expenses for the user
     expenses = Expense.objects.filter(user=user)
     data = [
         {
             'Vendor Name': expense.vendor_name,
-            'Due Date': (
-                str(expense.due_day_of_month) if expense.frequency == 'Monthly'
-                else f"{dict(Expense.MONTH_CHOICES).get(expense.due_month, 'Unknown')} {expense.due_day_of_month}"
-            ),
+            'Due Date': str(expense.due_day_of_month),
             'Amount': expense.amount,
             'Date Paid': expense.date_paid,
             'Frequency': expense.frequency,
