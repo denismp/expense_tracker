@@ -1,4 +1,5 @@
 # apps/expenses/views.py
+# apps/expenses/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
@@ -25,8 +26,7 @@ def expense_list(request):
         if expense.frequency == 'Monthly':
             expense.display_due_date = str(expense.due_day_of_month)  # e.g., "15"
         else:  # Quarterly or Yearly
-            month_name = dict(Expense.MONTH_CHOICES).get(expense.due_month, 'Unknown')
-            expense.display_due_date = f"{month_name} {expense.due_day_of_month}"  # e.g., "March 15"
+            expense.display_due_date = f"{expense.due_day_of_month} ({expense.frequency})"  # e.g., "15 (Quarterly)"
 
     # Calculate totals based on frequency
     total_monthly = sum(exp.amount for exp in expenses if exp.frequency == "Monthly")
@@ -52,11 +52,6 @@ def add_expense(request):
         if form.is_valid():
             expense = form.save(commit=False)
             expense.user = request.user
-            if expense.frequency == 'Monthly':
-                expense.due_month = None
-            elif not expense.due_month:
-                form.add_error('due_month', 'Month is required for Quarterly or Yearly expenses.')
-                return render(request, 'expenses/expense_form.html', {'form': form})
             expense.save()
             return redirect('expenses:expense_list')
     else:
@@ -77,11 +72,6 @@ def edit_expense(request, pk):
         form = ExpenseForm(request.POST, instance=expense)
         if form.is_valid():
             expense = form.save(commit=False)
-            if expense.frequency == 'Monthly':
-                expense.due_month = None
-            elif not expense.due_month:
-                form.add_error('due_month', 'Month is required for Quarterly or Yearly expenses.')
-                return render(request, 'expenses/expense_form.html', {'form': form})
             expense.save()
             return redirect('expenses:expense_list')
     else:
