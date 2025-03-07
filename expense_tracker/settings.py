@@ -106,16 +106,25 @@ WSGI_APPLICATION = 'expense_tracker.wsgi.application'
 # }
 import os
 
+# 🔄 Default to SQLite
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'expensetracker'),
-        'USER': os.getenv('DB_USER', 'expense_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+# 🔄 Override with PostgreSQL if environment variables are set
+if os.getenv("USE_POSTGRES", "false").lower() == "true":
+    print("⚠️ Using PostgreSQL instead of SQLite (USE_POSTGRES is set to true).")
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("DB_NAME", "expense_tracker_db"),
+        "USER": os.getenv("DB_USER", "expense_user"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "your_secure_password"),
+        "HOST": os.getenv("DB_HOST", "localhost"),  # Change this for remote DB
+        "PORT": os.getenv("DB_PORT", "5432"),
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
