@@ -2,12 +2,19 @@
   "name": "expense-tracker-electron",
   "version": "1.0.0",
   "description": "An expense tracking application using Electron and Django.",
-  "author": "Denis Putnam",
+  "author": {
+    "name": "Denis Putnam",
+    "email": "your-email@example.com"
+  },
   "main": "electron-app/main.js",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "dist": "electron-builder --mac"
+    "dist-mac": "electron-builder --mac --x64 --arm64",
+    "dist-mac-universal": "electron-builder --mac --universal",
+    "dist-win": "electron-builder --win --x64 --arm64",
+    "dist-linux": "electron-builder --linux",
+    "dist-all": "electron-builder --mac --win --linux --x64 --arm64"
   },
   "dependencies": {
     "wait-on": "^8.0.2"
@@ -37,8 +44,9 @@
         "filter": ["**/*"]
       },
       {
-        "from": "scripts/setup_venv.sh",
-        "to": "scripts/setup_venv.sh"
+        "from": "scripts",
+        "to": "scripts",
+        "filter": ["setup_venv.sh"]
       },
       {
         "from": "db.sqlite3",
@@ -49,7 +57,56 @@
       "buildResources": "build"
     },
     "mac": {
-      "category": "public.app-category.finance"
+      "category": "public.app-category.finance",
+      "icon": "icons/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "icons/icon.ico",
+      "artifactName": "${productName}-win-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "rpm",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "icons/",
+      "category": "Finance",
+      "artifactName": "${productName}-linux-${arch}.${ext}",
+      "maintainer": "Denis Putnam <your-email@example.com>"
     }
   }
 }
