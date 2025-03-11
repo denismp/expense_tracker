@@ -1,0 +1,55 @@
+{
+  "name": "expense-tracker-electron",
+  "version": "1.0.0",
+  "description": "An expense tracking application using Electron and Django.",
+  "author": "Denis Putnam",
+  "main": "electron-app/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "dist": "electron-builder --mac"
+  },
+  "dependencies": {
+    "wait-on": "^8.0.2"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0"
+  },
+  "build": {
+    "asar": false,
+    "files": [
+      "electron-app/main.js",
+      "electron-app/package.json",
+      "electron-app/node_modules/**/*",
+      "manage.py",
+      "expense_tracker/**/*",
+      "apps/**/*",
+      "static/**/*",
+      "templates/**/*",
+      ".env",
+      "requirements.txt",
+      "db.sqlite3"
+    ],
+    "extraResources": [
+      {
+        "from": "venv",
+        "to": "venv",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "scripts/setup_venv.sh",
+        "to": "scripts/setup_venv.sh"
+      },
+      {
+        "from": "db.sqlite3",
+        "to": "db.sqlite3"
+      }
+    ],
+    "directories": {
+      "buildResources": "build"
+    },
+    "mac": {
+      "category": "public.app-category.finance"
+    }
+  }
+}
