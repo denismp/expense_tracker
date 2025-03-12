@@ -145,7 +145,8 @@ function createWindow() {
         width: 1200,
         height: 800,
         webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            contextIsolation: false  // ✅ Required for clipboard operations
         }
     });
 
@@ -171,6 +172,17 @@ function createWindow() {
             console.error('❌ Django server failed to start:', err);
         });
 
+    // ✅ Enable Right-Click Copy-Paste Menu
+    mainWindow.webContents.on('context-menu', (event, params) => {
+        const contextMenu = Menu.buildFromTemplate([
+            { role: 'cut' },
+            { role: 'copy' },
+            { role: 'paste' },
+            { role: 'selectAll' }
+        ]);
+        contextMenu.popup();
+    });
+
     // ✅ Kill Django & Electron when window closes
     mainWindow.on('closed', () => {
         cleanup();
@@ -184,11 +196,19 @@ function createWindow() {
         }
     });
 
-    // ✅ Add Print & Quit Menu
+    // ✅ Add File Menu with Clipboard and Print
     const menuTemplate = [
         {
             label: 'File',
             submenu: [
+                { role: 'undo' },
+                { role: 'redo' },
+                { type: 'separator' },
+                { role: 'cut' },
+                { role: 'copy' },
+                { role: 'paste' },
+                { role: 'selectAll' },
+                { type: 'separator' },
                 {
                     label: 'Print',
                     accelerator: 'CmdOrCtrl+P',
