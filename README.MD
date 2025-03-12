@@ -29,10 +29,16 @@ cd expense-tracker
 Run the following command to install the package into your Python environment:
 
 ```bash
+pip install -r requirements.txt
 pip install .
 ```
 
 After installation, run the following commands to set up the database:
+
+If you want to use postgres then set the environment variable USE_POSTGRES=true, otherwise sqlite will be used.
+```bash
+export USE_POSTRGRES=true
+```
 
 ```bash
 expense_tracker makemigrations
@@ -60,10 +66,16 @@ pip install -r requirements.txt
 If `requirements.txt` is missing, install the required packages manually:
 
 ```bash
-pip install django pandas openpyxl
+pip install Django>=5.1.7 pandas openpyxl xlsxwriter psycopg2 dotenv
+pycgi
 ```
 
 ### **3. Apply Migrations**
+
+If you want to use postgres then set the environment variable USE_POSTGRES=true, otherwise sqlite will be used.
+```bash
+export USE_POSTRGRES=true
+```
 
 ```bash
 python manage.py makemigrations
@@ -143,6 +155,7 @@ The exported **Excel file** contains your expense data with the following column
 - The **Excel file is generated in memory** using Python's `BytesIO` and `pandas` libraries.  
 - It is sent to your browser as an **HTTP response** with the `Content-Disposition: attachment` header, prompting an **automatic download** to your local machine (typically to your **Downloads folder**).  
 - **No files are saved on the server**, ensuring **efficiency and privacy**.  
+
 ### Importing Expenses
 
 #### How to Import:
@@ -199,20 +212,43 @@ Vendor C    | December 25 | 300.00 | 2025-12-25 | Yearly
 ## 🛠️ **Troubleshooting**
 
 - **Database Issues?**  
-  ```bash
-  python manage.py makemigrations
-  python manage.py migrate
-  ```
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
 
 - **Clear Cache Issues:**
   - Windows/Linux: `Ctrl + Shift + R`
   - Mac: `Cmd + Shift + R`
 
 - **Reset Database (Optional):**
-  ```bash
-  rm db.sqlite3
-  python manage.py migrate
-  ```
+```bash
+rm db.sqlite3
+python manage.py migrate
+```
+
+##  👩‍💻 Building the Application
+
+To build and package the application, follow these steps:
+
+1. **Clean everything and reinstall dependencies:**
+```bash
+export USE_POSTGRES=false
+python manage.py makemigrations
+python manage.py migrate
+rm -rf node_modules dist out build
+npm install
+```
+
+2. **Build and package the app:**
+```bash
+npm run dist
+npm run dist-mac             # macOS Intel & ARM
+npm run dist-mac-universal   # macOS (Universal Binary)
+npm run dist-win             # Windows (x64 & ARM64)
+npm run dist-linux
+npm run dist-all             # Both macOS & Windows
+```
 
 ## 👩‍💻 **Contributing**
 
