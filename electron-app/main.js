@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron');
 const path = require('path');
 const { execSync, exec } = require('child_process');
 const fs = require('fs');
@@ -77,13 +77,14 @@ function applyMigrations() {
     }
 }
 
+// 🛑 **Create Django Superuser**
 function createSuperUser() {
     const isPackaged = app.isPackaged;
     const resourcesPath = isPackaged ? process.resourcesPath : __dirname;
     const PYTHON_EXECUTABLE = path.join(resourcesPath, 'venv', 'bin', 'python3');
     const DJANGO_PROJECT_PATH = isPackaged ? path.join(resourcesPath, 'app') : path.join(__dirname, '..');
 
-    console.log("👤 Creating Django superuser...");
+    console.log("👤 Checking if superuser exists...");
 
     const createSuperUserCommand = `${PYTHON_EXECUTABLE} ${DJANGO_PROJECT_PATH}/manage.py shell -c "
 from django.contrib.auth import get_user_model;
@@ -136,13 +137,13 @@ function cleanup() {
 
     console.log("🛑 Killing Electron process...");
     app.quit();
-    process.exit(0); // **Forcefully terminate all Electron-related processes**
+    process.exit(0);
 }
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: 1200,
+        height: 800,
         webPreferences: {
             nodeIntegration: true
         }
@@ -152,6 +153,7 @@ function createWindow() {
     ensureVenv();
     applyMigrations();
 
+    // **Give Django time to start before creating superuser**
     setTimeout(() => {
         createSuperUser();
     }, 3000); 
@@ -160,7 +162,7 @@ function createWindow() {
 
     console.log("⏳ Waiting for Django to start...");
 
-    waitOn({ resources: ['http://127.0.0.1:8000'] })
+    waitOn({ resources: ['http://127.0.0.1:8000/accounts/login/'] })
         .then(() => {
             console.log("✅ Django server is ready. Loading login page...");
             mainWindow.loadURL('http://127.0.0.1:8000/accounts/login/');
@@ -169,34 +171,50 @@ function createWindow() {
             console.error('❌ Django server failed to start:', err);
         });
 
-    setTimeout(() => {
-        console.log("⏳ Forcing load of login page after timeout...");
-        mainWindow.loadURL('http://127.0.0.1:8000/accounts/login/');
-    }, 5000);
-
     // ✅ Kill Django & Electron when window closes
     mainWindow.on('closed', () => {
         cleanup();
     });
 
-    // ✅ Open Django Admin
-    console.log("🖥️ Open Django Admin: http://127.0.0.1:8000/admin");
+    // ✅ Print Handler
+    ipcMain.on('print-page', (event) => {
+        if (mainWindow) {
+            console.log("🖨️ Printing expense page...");
+            mainWindow.webContents.print({ silent: false, printBackground: true });
+        }
+    });
+
+    // ✅ Add Print & Quit Menu
+    const menuTemplate = [
+        {
+            label: 'File',
+            submenu: [
+                {
+                    label: 'Print',
+                    accelerator: 'CmdOrCtrl+P',
+                    click: () => {
+                        mainWindow.webContents.print({ silent: false, printBackground: true });
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Quit',
+                    accelerator: 'CmdOrCtrl+Q',
+                    click: () => {
+                        cleanup();
+                    }
+                }
+            ]
+        }
+    ];
+
+    const menu = Menu.buildFromTemplate(menuTemplate);
+    Menu.setApplicationMenu(menu);
 }
 
-// ✅ When Electron is ready, start the app
 app.whenReady().then(createWindow);
-
-// ✅ Kill Django & Electron when all windows are closed
-app.on('window-all-closed', () => {
-    cleanup();
-});
-
-// ✅ Kill Electron when quitting
-app.on('quit', () => {
-    cleanup();
-});
-
-// ✅ Reopen window if app is reactivated (macOS behavior)
+app.on('window-all-closed', () => cleanup());
+app.on('quit', () => cleanup());
 app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
