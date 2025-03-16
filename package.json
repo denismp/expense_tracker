@@ -20,7 +20,8 @@
     "wait-on": "^8.0.2"
   },
   "devDependencies": {
-    "electron": "^28.0.0"
+    "electron": "^28.0.0",
+    "electron-builder": "^25.1.8"
   },
   "build": {
     "asar": false,
@@ -59,10 +60,13 @@
     "mac": {
       "category": "public.app-category.finance",
       "icon": "icons/icon.icns",
-      "hardenedRuntime": true,
+      "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "entitlements": "entitlements.mac.plist",
       "entitlementsInherit": "entitlements.mac.plist",
+      "sign": false,
+      "identity": null,
+      "notarize": false,
       "target": [
         {
           "target": "dmg",
