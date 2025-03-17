@@ -25,7 +25,9 @@
                 {% if user.is_authenticated %}
                     <form action="{% url 'accounts:logout' %}" method="post" class="d-inline">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-light">Logout</button>
+                        <!-- <button type="submit" class="btn btn-sm btn-outline-light">Logout</button> -->
+                        <button type="submit" class="btn btn-sm btn-light" style="color: #000 !important;">Logout</button>
+                        <!-- <button type="submit" class="btn btn-sm btn-light">Logout</button> -->
                     </form>
                 {% else %}
                     <a href="{% url 'accounts:login' %}" class="btn btn-sm btn-light">Login</a>
