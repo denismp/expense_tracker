@@ -47,4 +47,9 @@ app = BUNDLE(
     name='ExpenseTracker.app',
     icon=None,
     bundle_identifier='com.denisputnam.expense-tracker',
+    info_plist={
+        'CFBundleShortVersionString': '1.0.0',
+        'CFBundleVersion': '1.0.0',
+        'LSMinimumSystemVersion': '10.15'
+    }
 )
