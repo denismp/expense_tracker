@@ -25,7 +25,7 @@ else:
     try:
         BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
         if 'site-packages' in str(BASE_DIR):
-            BASE_DIR = Path(__file__).resolve().parent  # Adjust for installed package
+            BASE_DIR = Path(__file__).resolve().parent
     except Exception:
         BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -38,7 +38,6 @@ else:
     ALLOWED_HOSTS = []
 
 # Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 SECRET_KEY = 'django-insecure-1b=937ambjdl8y6x2)o@iv(abx(99x(-+%j2*hjm@xuob%ex=-'
 
 # Application definition
@@ -71,7 +70,7 @@ TEMPLATES = [
         'DIRS': [
             os.path.join(BASE_DIR, 'templates'),
             os.path.join(BASE_DIR, 'expense_tracker'),
-            os.path.join(BASE_DIR, 'expense_tracker', 'templates'),  # Added this line
+            os.path.join(BASE_DIR, 'expense_tracker', 'templates'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -81,22 +80,30 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
-            'debug': DEBUG,  # Sync template debug with DEBUG setting
+            'debug': DEBUG,
         },
     },
 ]
 
 WSGI_APPLICATION = 'expense_tracker.wsgi.application'
 
-# Database configuration
+# ✅ Database configuration
 if getattr(sys, 'frozen', False):
+    # Use the bundled app path provided at runtime
+    db_path = os.environ.get("DJANGO_DB_PATH")
+    if db_path:
+        print(f"📁 Using bundled app DB at: {db_path}")
+    else:
+        db_path = os.path.join(BASE_DIR, 'db.sqlite3')
+        print(f"⚠️ DJANGO_DB_PATH not set. Falling back to: {db_path}")
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            'NAME': db_path,
         }
     }
-    print("Using SQLite for bundled app.")
+
 elif os.getenv("USE_POSTGRES", "false").lower() == "true":
     print("⚠️ Using PostgreSQL instead of SQLite (USE_POSTGRES is set to true).")
     DATABASES = {
@@ -109,7 +116,9 @@ elif os.getenv("USE_POSTGRES", "false").lower() == "true":
             'PORT': os.getenv("DB_PORT", "5432"),
         }
     }
+
 else:
+    # Default local dev setup
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -134,6 +143,7 @@ USE_TZ = True
 # Static files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # For collectstatic
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

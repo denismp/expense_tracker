@@ -5,9 +5,14 @@ import threading
 import webbrowser
 import requests
 import signal
+
+# macOS GUI activation using AppKit and Foundation
+from AppKit import NSApplication, NSApplicationActivationPolicyRegular
+from Foundation import NSRunLoop, NSDate
+
 from django.core.management import execute_from_command_line
 
-# Flag to signal server shutdown
+# Flag to control server shutdown
 shutdown_flag = False
 
 
@@ -37,30 +42,36 @@ def open_browser():
 
 
 def signal_handler(signum, frame):
-    """Handle the interrupt signal to shut down the server."""
+    """Gracefully handle termination."""
     global shutdown_flag
     shutdown_flag = True
     print("Shutting down the server...")
 
 
 if __name__ == '__main__':
-    # Set up signal handler for Ctrl+C
+    # Handle Ctrl+C
     signal.signal(signal.SIGINT, signal_handler)
 
-    # Start the server in a separate thread
+    # Initialize macOS application context
+    app = NSApplication.sharedApplication()
+    app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
+    app.activateIgnoringOtherApps_(True)
+
+    # Start the Django server in a background thread
     server_thread = threading.Thread(target=start_server)
     server_thread.start()
 
-    # Wait for the server to be ready
-    url = 'http://127.0.0.1:8000/'
-    if wait_for_server(url):
-        print("Server is ready!")
+    # Wait until Django is up
+    if wait_for_server("http://127.0.0.1:8000"):
+        print("✅ Server is ready!")
         open_browser()
-        # Keep the main thread running until interrupted
+
+        # Enter the macOS run loop (keeps Dock icon and app state)
+        run_loop = NSRunLoop.currentRunLoop()
         while not shutdown_flag:
-            time.sleep(1)
-        # Wait for the server thread to finish
+            run_loop.runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.5))
+
         server_thread.join()
     else:
-        print("Error: Server did not start within 30 seconds.")
+        print("❌ Error: Server did not start within 30 seconds.")
         sys.exit(1)
