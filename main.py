@@ -6,56 +6,62 @@ import webbrowser
 import requests
 import signal
 import shutil
-# import pathlib
 
 # macOS GUI activation using AppKit and Foundation
 from AppKit import (
     NSApplication, NSImage, NSApplicationActivationPolicyRegular,
-    NSCriticalRequest
+    NSCriticalRequest, NSObject
 )
-from Foundation import NSRunLoop, NSDate
+from Foundation import NSRunLoop, NSDate, NSLog
 
 from django.core.management import execute_from_command_line
 
 # Path to the icon file (relative to app bundle or source dir)
 ICON_PATH = os.path.join(os.path.dirname(sys.argv[0]), "icons/icon.icns")
 
-# Flag to control server shutdown
+# Flag to control shutdown loop
 shutdown_flag = False
 
 
 def ensure_writable_database():
-    """If bundled, copy db.sqlite3 from app bundle to user's Library folder."""
+    """Copy db.sqlite3 to user-writable location if bundled."""
     if getattr(sys, 'frozen', False):
-        # Bundled db path inside the PyInstaller package
         bundled_db_path = os.path.join(sys._MEIPASS, 'db.sqlite3')
         writable_db_path = os.path.expanduser('~/Library/Application Support/ExpenseTracker/db.sqlite3')
 
-        # Ensure target directory exists
         os.makedirs(os.path.dirname(writable_db_path), exist_ok=True)
 
-        # Copy only if it doesn't already exist
         if not os.path.exists(writable_db_path):
             print("📄 Copying db.sqlite3 to writable location...")
             shutil.copy2(bundled_db_path, writable_db_path)
         else:
             print("📂 Using existing writable database.")
 
-        # Tell Django to use the writable copy
         os.environ['DJANGO_DB_PATH'] = writable_db_path
 
 
+class AppDelegate(NSObject):
+    def applicationShouldTerminate_(self, sender):
+        """Intercept Dock → Quit and forcefully shut down."""
+        NSLog("🍎 Dock 'Quit' clicked — initiating force quit.")
+        force_quit()
+        return 0  # Prevent normal exit
+
+
 def set_app_icon():
-    """Ensure the application icon appears in the Dock and stops bouncing."""
+    """Set app icon and stop bounce animation."""
     app = NSApplication.sharedApplication()
     app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
 
-    # Set custom icon if available
+    # Attach delegate for Dock quit handling
+    delegate = AppDelegate.alloc().init()
+    app.setDelegate_(delegate)
+
     if os.path.exists(ICON_PATH):
         image = NSImage.alloc().initWithContentsOfFile_(ICON_PATH)
         app.setApplicationIconImage_(image)
 
-    # Bounce to grab attention, then stop it
+    # Bounce briefly, then stop
     bounce_id = app.requestUserAttention_(NSCriticalRequest)
 
     def stop_bounce():
@@ -67,13 +73,13 @@ def set_app_icon():
 
 
 def start_server():
-    """Start the Django development server."""
+    """Start Django server."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'expense_tracker.settings')
     execute_from_command_line(['manage.py', 'runserver', '8000', '--noreload'])
 
 
 def wait_for_server(url, timeout=30):
-    """Wait until the server is ready by checking the URL."""
+    """Ping server until it responds or timeout."""
     start_time = time.time()
     while True:
         try:
@@ -87,42 +93,45 @@ def wait_for_server(url, timeout=30):
 
 
 def open_browser():
-    """Open the default web browser to the server URL."""
+    """Open the app in the default browser."""
     webbrowser.open('http://127.0.0.1:8000')
 
 
 def signal_handler(signum, frame):
-    """Gracefully handle termination."""
+    """Handle OS signals like Ctrl+C and SIGTERM."""
+    force_quit()
+
+
+def force_quit():
+    """Forcefully terminate app and all threads."""
     global shutdown_flag
     shutdown_flag = True
-    print("Shutting down the server...")
+    print("🛑 Force quitting application...")
+    time.sleep(0.5)
+    os._exit(0)  # Terminate all threads and subprocesses
 
 
 if __name__ == '__main__':
-    # Catch Ctrl+C
+    # Handle SIGINT (Ctrl+C) and SIGTERM
     signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
-    # Prepare writable database
     ensure_writable_database()
-
-    # Set up macOS icon and app state
     set_app_icon()
 
-    # Start Django server in background
     server_thread = threading.Thread(target=start_server)
     server_thread.start()
 
-    # Wait for server then open browser
     if wait_for_server("http://127.0.0.1:8000"):
         print("✅ Server is ready!")
         open_browser()
 
-        # Enter macOS run loop to keep app "alive"
         run_loop = NSRunLoop.currentRunLoop()
         while not shutdown_flag:
             run_loop.runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.5))
 
         server_thread.join()
+        force_quit()
     else:
         print("❌ Error: Server did not start within 30 seconds.")
         sys.exit(1)
