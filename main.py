@@ -18,6 +18,7 @@ from django.core.management import execute_from_command_line
 # Globals
 shutdown_flag = False
 ICON_PATH = os.path.join(os.path.dirname(sys.argv[0]), "icons/icon.icns")
+delegate = None  # Keep reference to AppDelegate
 
 
 def ensure_writable_database():
@@ -25,7 +26,6 @@ def ensure_writable_database():
     if getattr(sys, 'frozen', False):
         bundled_db_path = os.path.join(sys._MEIPASS, 'db.sqlite3')
         writable_db_path = os.path.expanduser('~/Library/Application Support/ExpenseTracker/db.sqlite3')
-
         os.makedirs(os.path.dirname(writable_db_path), exist_ok=True)
 
         if not os.path.exists(writable_db_path):
@@ -54,16 +54,17 @@ class AppDelegate(NSObject):
     def applicationShouldTerminate_(self, sender):
         NSLog("🍎 Dock 'Quit' clicked — initiating force quit.")
         force_quit()
-        return 0  # prevent default quit behavior
+        return 0  # Prevent default quit behavior
 
 
-def set_app_icon():
-    """Setup Dock icon, bounce, and delegate."""
+def set_app_icon_and_delegate():
+    """Setup NSApp, icon, bounce, and delegate for Dock quit handling."""
+    global delegate
+
     app = NSApplication.sharedApplication()
     app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
 
-    # Prevent delegate from being garbage collected
-    global delegate
+    # Create delegate to trap Dock 'Quit'
     delegate = AppDelegate.alloc().init()
     app.setDelegate_(delegate)
 
@@ -71,6 +72,7 @@ def set_app_icon():
         image = NSImage.alloc().initWithContentsOfFile_(ICON_PATH)
         app.setApplicationIconImage_(image)
 
+    # Bounce briefly then cancel
     bounce_id = app.requestUserAttention_(NSCriticalRequest)
 
     def stop_bounce():
@@ -108,7 +110,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, signal_handler)
 
     ensure_writable_database()
-    set_app_icon()
+    set_app_icon_and_delegate()
 
     server_thread = threading.Thread(target=start_server)
     server_thread.start()
