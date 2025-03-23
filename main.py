@@ -11,12 +11,11 @@ from AppKit import (
     NSApplication, NSImage, NSApplicationActivationPolicyRegular,
     NSCriticalRequest, NSObject
 )
-from Foundation import NSRunLoop, NSDate, NSLog
+from Foundation import NSLog
 
 from django.core.management import execute_from_command_line
 
 # Globals
-shutdown_flag = False
 ICON_PATH = os.path.join(os.path.dirname(sys.argv[0]), "icons/icon.icns")
 delegate = None  # Keep reference to AppDelegate
 
@@ -38,20 +37,20 @@ def ensure_writable_database():
 
 
 def force_quit():
-    """Forcefully terminate the app and all threads."""
-    global shutdown_flag
-    shutdown_flag = True
-    print("🛑 Force quitting application...")
-    time.sleep(0.5)
-    os._exit(0)
+    """Forcefully terminate the app and all threads using SIGKILL."""
+    print("🛑 Force quitting application with SIGKILL...")
+    time.sleep(0.1)
+    os.kill(os.getpid(), signal.SIGKILL)
 
 
 def signal_handler(signum, frame):
+    """Handle SIGINT and SIGTERM by triggering force_quit."""
     force_quit()
 
 
 class AppDelegate(NSObject):
     def applicationShouldTerminate_(self, sender):
+        """Handle Dock 'Quit' event."""
         NSLog("🍎 Dock 'Quit' clicked — initiating force quit.")
         force_quit()
         return 0  # Prevent default quit behavior
@@ -64,7 +63,6 @@ def set_app_icon_and_delegate():
     app = NSApplication.sharedApplication()
     app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
 
-    # Create delegate to trap Dock 'Quit'
     delegate = AppDelegate.alloc().init()
     app.setDelegate_(delegate)
 
@@ -72,7 +70,6 @@ def set_app_icon_and_delegate():
         image = NSImage.alloc().initWithContentsOfFile_(ICON_PATH)
         app.setApplicationIconImage_(image)
 
-    # Bounce briefly then cancel
     bounce_id = app.requestUserAttention_(NSCriticalRequest)
 
     def stop_bounce():
@@ -84,11 +81,13 @@ def set_app_icon_and_delegate():
 
 
 def start_server():
+    """Start the Django server in a thread."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'expense_tracker.settings')
     execute_from_command_line(['manage.py', 'runserver', '8000', '--noreload'])
 
 
 def wait_for_server(url, timeout=30):
+    """Wait for the server to be ready."""
     start = time.time()
     while True:
         try:
@@ -102,6 +101,7 @@ def wait_for_server(url, timeout=30):
 
 
 def open_browser():
+    """Open the default browser to the app URL."""
     webbrowser.open('http://127.0.0.1:8000')
 
 
@@ -119,12 +119,8 @@ if __name__ == '__main__':
         print("✅ Server is ready!")
         open_browser()
 
-        run_loop = NSRunLoop.currentRunLoop()
-        while not shutdown_flag:
-            run_loop.runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.5))
-
-        server_thread.join()
-        force_quit()
+        # Start macOS native event loop
+        NSApplication.sharedApplication().run()
     else:
         print("❌ Error: Server did not start within 30 seconds.")
         sys.exit(1)
