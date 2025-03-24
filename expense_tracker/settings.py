@@ -11,43 +11,34 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-
 from dotenv import load_dotenv
 import os
+import sys
 
 # Load environment variables from .env file
 load_dotenv()
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
-    }
-}
+# Determine if the app is running from a PyInstaller bundle and set BASE_DIR
+if getattr(sys, 'frozen', False):
+    BASE_DIR = sys._MEIPASS
+else:
+    try:
+        BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
+        if 'site-packages' in str(BASE_DIR):
+            BASE_DIR = Path(__file__).resolve().parent
+    except Exception:
+        BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-try:
-    BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
-    if 'site-packages' in str(BASE_DIR):
-        BASE_DIR = Path(__file__).resolve().parent  # Adjust for installed package
-except Exception:
-    BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Determine if running from installed package or local repo
-PACKAGE_PREFIX = 'expense_tracker' if 'site-packages' in str(BASE_DIR) else ''
+# Set DEBUG and ALLOWED_HOSTS based on whether the app is bundled
+if getattr(sys, 'frozen', False):
+    DEBUG = False
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+else:
+    DEBUG = True
+    ALLOWED_HOSTS = []
 
 # Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
 SECRET_KEY = 'django-insecure-1b=937ambjdl8y6x2)o@iv(abx(99x(-+%j2*hjm@xuob%ex=-'
-
-DEBUG = True
-
-ALLOWED_HOSTS = []
 
 # Application definition
 INSTALLED_APPS = [
@@ -57,8 +48,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # f'{PACKAGE_PREFIX}.apps.accounts' if PACKAGE_PREFIX else 'apps.accounts',
-    # f'{PACKAGE_PREFIX}.apps.expenses' if PACKAGE_PREFIX else 'apps.expenses',
     'expense_tracker.apps.accounts',
     'expense_tracker.apps.expenses',
 ]
@@ -79,9 +68,9 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            BASE_DIR / 'templates' if 'site-packages' in str(BASE_DIR) else BASE_DIR / 'expense_tracker' / 'templates',
-            BASE_DIR / 'apps' / 'accounts' / 'templates' if 'site-packages' in str(BASE_DIR) else BASE_DIR / 'expense_tracker' / 'apps' / 'accounts' / 'templates',
-            BASE_DIR / 'apps' / 'expenses' / 'templates' if 'site-packages' in str(BASE_DIR) else BASE_DIR / 'expense_tracker' / 'apps' / 'expenses' / 'templates',
+            os.path.join(BASE_DIR, 'templates'),
+            os.path.join(BASE_DIR, 'expense_tracker'),
+            os.path.join(BASE_DIR, 'expense_tracker', 'templates'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -91,39 +80,50 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'debug': DEBUG,
         },
     },
 ]
 
 WSGI_APPLICATION = 'expense_tracker.wsgi.application'
 
-# Database
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-import os
+# ✅ Database configuration
+if getattr(sys, 'frozen', False):
+    # Use the bundled app path provided at runtime
+    db_path = os.environ.get("DJANGO_DB_PATH")
+    if db_path:
+        print(f"📁 Using bundled app DB at: {db_path}")
+    else:
+        db_path = os.path.join(BASE_DIR, 'db.sqlite3')
+        print(f"⚠️ DJANGO_DB_PATH not set. Falling back to: {db_path}")
 
-# 🔄 Default to SQLite
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': db_path,
+        }
     }
-}
 
-# 🔄 Override with PostgreSQL if environment variables are set
-if os.getenv("USE_POSTGRES", "false").lower() == "true":
+elif os.getenv("USE_POSTGRES", "false").lower() == "true":
     print("⚠️ Using PostgreSQL instead of SQLite (USE_POSTGRES is set to true).")
-    DATABASES["default"] = {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "expense_tracker_db"),
-        "USER": os.getenv("DB_USER", "expense_user"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "your_secure_password"),
-        "HOST": os.getenv("DB_HOST", "localhost"),  # Change this for remote DB
-        "PORT": os.getenv("DB_PORT", "5432"),
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv("DB_NAME", "expense_tracker_db"),
+            'USER': os.getenv("DB_USER", "expense_user"),
+            'PASSWORD': os.getenv("DB_PASSWORD", "your_secure_password"),
+            'HOST': os.getenv("DB_HOST", "localhost"),
+            'PORT': os.getenv("DB_PORT", "5432"),
+        }
+    }
+
+else:
+    # Default local dev setup
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
     }
 
 # Password validation
@@ -141,10 +141,11 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # For collectstatic
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.CustomUser'
 LOGIN_REDIRECT_URL = '/expenses/'
-TEMPLATES[0]['OPTIONS']['debug'] = True

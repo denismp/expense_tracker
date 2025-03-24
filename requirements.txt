@@ -5,3 +5,4 @@ xlsxwriter
 psycopg2
 dotenv
 pycgi
+pyobjc

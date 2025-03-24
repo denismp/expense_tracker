@@ -1,9 +1,8 @@
 /* styles.css */
 
-/* Import Bootstrap from CDN */
+/* Existing imports and styles unchanged */
 @import url('https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css');
 
-/* Custom Styles */
 body {
     background-color: #f8f9fa;
     padding-top: 20px;
@@ -25,48 +24,9 @@ nav a:hover {
     text-decoration: underline;
 }
 
-h1, h2, h3 {
-    margin-bottom: 15px;
-    color: #343a40;
+/* Add this rule to ensure btn-light text is dark */
+nav .btn-light {
+    color: #212529 !important; /* Matches Bootstrap’s default btn-light text color */
 }
 
-/* Custom Button Style */
-.btn-custom {
-    background-color: #007bff;
-    color: #ffffff;
-    border: none;
-}
-
-.btn-custom:hover {
-    background-color: #0056b3;
-}
-
-/* Tables */
-table {
-    margin-bottom: 20px;
-}
-
-th {
-    background-color: #007bff;
-    color: #ffffff;
-}
-
-/* Forms */
-form {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-}
-
-/* Footer */
-footer {
-    text-align: center;
-    padding: 10px;
-    background-color: #343a40;
-    color: #ffffff;
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-}
+/* Rest of your styles unchanged */
