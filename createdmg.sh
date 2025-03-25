@@ -2,7 +2,8 @@
 
 # Define variables
 APP_NAME="ExpenseTracker"
-PROJECT_DIR="/Users/denisputnam/git/expense_tracker"
+#PROJECT_DIR="/Users/denisputnam/git/expense_tracker"
+PROJECT_DIR="${HOME}/git/expense_tracker"
 APP_PATH="${PROJECT_DIR}/dist/${APP_NAME}.app"
 DMG_NAME="${APP_NAME}.dmg"
 DMG_PATH="${PROJECT_DIR}/dist/${DMG_NAME}"
