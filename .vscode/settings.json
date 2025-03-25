@@ -1,0 +1,30 @@
+{
+    "workbench.colorTheme": "Default Dark+",
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "terminal.integrated.shellIntegration.enabled": false,
+    "terminal.integrated.allowEnvironmentChanges": "never",
+    "terminal.integrated.defaultProfile.windows": "GitBash",
+    "terminal.integrated.profiles.windows": {
+        "GitBash": {
+            "path": "C:\\Program Files\\Git\\bin\\bash.exe",
+            "args": ["--login"]
+        },
+        "PowerShell": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell"
+        },
+        "Command Prompt": {
+            "path": [
+                "${env:windir}\\Sysnative\\cmd.exe",
+                "${env:windir}\\System32\\cmd.exe"
+            ],
+            "args": [],
+            "icon": "terminal-cmd"
+        }
+    },
+    "python.condaPath": "C:\\Users\\denis\\anaconda3\\Scripts\\conda.exe",
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": ["--max-line-length=120"],
+    "flake8.args": ["--max-line-length=120"]
+}
