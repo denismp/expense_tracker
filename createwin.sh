@@ -12,6 +12,7 @@ STATIC_DIR="${PROJECT_DIR}/static"
 BUILD_DIR="${PROJECT_DIR}/build"
 ENTITLEMENTS_FILE="entitlements.mac.plist"
 TEMP_DIR="${PROJECT_DIR}/.temp_build_backup"
+APPDATA_DB_PATH="$(cygpath -u "$APPDATA")/ExpenseTracker/db.sqlite3"
 
 PYINSTALLER_CMD="pyinstaller --noconsole --onefile --windowed --name=${APP_NAME} \
   --icon=${ICON_PATH} \
@@ -37,22 +38,31 @@ fi
 echo "🛠️ Setting USE_POSTGRES=false"
 export USE_POSTGRES=false
 
-echo "📂 Collecting static files..."
 cd "${PROJECT_DIR}" || { echo "❌ Failed to change to project directory: ${PROJECT_DIR}"; exit 1; }
+
+echo "🗑️ Deleting old database files..."
+rm -f db.sqlite3
+rm -f "$APPDATA_DB_PATH"
+
+echo "🧱 Running migrations..."
+python manage.py makemigrations || { echo "❌ makemigrations failed."; exit 1; }
+python manage.py migrate || { echo "❌ migrate failed."; exit 1; }
+
+echo "👤 Creating superuser 'admin'..."
+export DJANGO_SUPERUSER_USERNAME=admin
+export DJANGO_SUPERUSER_EMAIL=denisputnam@gmail.com
+export DJANGO_SUPERUSER_PASSWORD=${DB_PASSWORD}
+python manage.py createsuperuser --noinput || { echo "❌ createsuperuser failed."; exit 1; }
+
+echo "📂 Collecting static files..."
 python manage.py collectstatic --noinput || { echo "❌ collectstatic failed."; exit 1; }
 
 echo "🧹 Cleaning old build artifacts..."
-
-# Backup entitlements.mac.plist if it exists
 mkdir -p "${TEMP_DIR}"
 if [ -f "${BUILD_DIR}/${ENTITLEMENTS_FILE}" ]; then
     cp "${BUILD_DIR}/${ENTITLEMENTS_FILE}" "${TEMP_DIR}/"
 fi
-
-# Remove entire build directory
 rm -rf "${BUILD_DIR}"
-
-# Restore entitlements.mac.plist
 mkdir -p "${BUILD_DIR}"
 if [ -f "${TEMP_DIR}/${ENTITLEMENTS_FILE}" ]; then
     mv "${TEMP_DIR}/${ENTITLEMENTS_FILE}" "${BUILD_DIR}/"
