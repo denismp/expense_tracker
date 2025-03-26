@@ -9,7 +9,6 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
 from pathlib import Path
 from dotenv import load_dotenv
 import os
@@ -31,7 +30,8 @@ else:
 
 # Set DEBUG and ALLOWED_HOSTS based on whether the app is bundled
 if getattr(sys, 'frozen', False):
-    DEBUG = False
+    # DEBUG = False
+    DEBUG = True
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 else:
     DEBUG = True
@@ -39,7 +39,6 @@ else:
 
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = 'django-insecure-1b=937ambjdl8y6x2)o@iv(abx(99x(-+%j2*hjm@xuob%ex=-'
-
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -126,6 +125,7 @@ else:
         }
     }
 
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -143,7 +143,11 @@ USE_TZ = True
 # Static files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # For collectstatic
+
+if getattr(sys, 'frozen', False):
+    STATIC_ROOT = os.path.join(sys._MEIPASS, 'staticfiles')
+else:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

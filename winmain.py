@@ -2,6 +2,7 @@ import atexit
 import ctypes
 import io
 import os
+import shutil
 import sys
 import threading
 import time
@@ -30,11 +31,23 @@ def ensure_writable_database():
     """
     Ensure the database is writable by copying it to the user's AppData folder
     if needed.
-
-    (Implementation details omitted for brevity; assume this function is
-    defined elsewhere in the module.)
     """
-    pass
+    try:
+        if getattr(sys, "frozen", False):
+            appdata_dir = os.getenv("APPDATA", os.path.expanduser("~"))
+            db_dir = os.path.join(appdata_dir, "ExpenseTracker")
+            os.makedirs(db_dir, exist_ok=True)
+            db_path = os.path.join(db_dir, "db.sqlite3")
+
+            if not os.path.exists(db_path):
+                bundle_dir = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+                template_db = os.path.join(bundle_dir, "db.sqlite3")
+                if os.path.exists(template_db):
+                    shutil.copyfile(template_db, db_path)
+
+            os.environ["DJANGO_DB_PATH"] = db_path
+    except Exception as e:
+        log_error(e)
 
 
 def log_error(exception):
@@ -132,6 +145,13 @@ def main():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "expense_tracker.settings")
     if django is not None:
         django.setup()
+
+    # Override DB path from environment if set
+    db_path = os.environ.get("DJANGO_DB_PATH")
+    if db_path:
+        from django.conf import settings
+
+        settings.DATABASES["default"]["NAME"] = db_path
 
     server_thread = threading.Thread(
         target=lambda: call_command("runserver", "127.0.0.1:8000", "--noreload"),

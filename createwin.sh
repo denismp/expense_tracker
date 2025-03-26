@@ -17,6 +17,7 @@ PYINSTALLER_CMD="pyinstaller --noconsole --onefile --windowed --name=${APP_NAME}
   --icon=${ICON_PATH} \
   --add-data \"db.sqlite3;.\" \
   --add-data \"static;static\" \
+  --add-data \"staticfiles;staticfiles\" \
   --add-data \"expense_tracker/templates;expense_tracker/templates\" \
   --add-data \"expense_tracker/apps/expenses/templates;expense_tracker/apps/expenses/templates\" \
   --add-data \"expense_tracker/apps/accounts/templates;expense_tracker/apps/accounts/templates\" \
