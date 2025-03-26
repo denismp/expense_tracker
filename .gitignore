@@ -10,3 +10,6 @@ expense_tracker/apps/expenses/__pycache__/
 expense_tracker/apps/expenses/management/__pycache__/
 expense_tracker/apps/expenses/migrations/__pycache__/
 staticfiles/
+.env
+.gitignore
+.gitignore
