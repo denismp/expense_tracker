@@ -7,3 +7,4 @@ dotenv
 pycgi
 requests
 pystray
+psutil

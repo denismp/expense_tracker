@@ -9,6 +9,9 @@ CONDA_ENV="expense_tracker_env"
 ICON_PATH="${PROJECT_DIR}/icons/icon.ico"
 REQUIREMENTS_FILE="${PROJECT_DIR}/requirements-win.txt"
 STATIC_DIR="${PROJECT_DIR}/static"
+BUILD_DIR="${PROJECT_DIR}/build"
+ENTITLEMENTS_FILE="entitlements.mac.plist"
+TEMP_DIR="${PROJECT_DIR}/.temp_build_backup"
 
 PYINSTALLER_CMD="pyinstaller --noconsole --onefile --windowed --name=${APP_NAME} \
   --icon=${ICON_PATH} \
@@ -38,7 +41,25 @@ cd "${PROJECT_DIR}" || { echo "❌ Failed to change to project directory: ${PROJ
 python manage.py collectstatic --noinput || { echo "❌ collectstatic failed."; exit 1; }
 
 echo "🧹 Cleaning old build artifacts..."
-rm -rf "${DIST_DIR}/ExpenseTracker" "${PROJECT_DIR}/build" "${PROJECT_DIR}/${APP_NAME}.spec"
+
+# Backup entitlements.mac.plist if it exists
+mkdir -p "${TEMP_DIR}"
+if [ -f "${BUILD_DIR}/${ENTITLEMENTS_FILE}" ]; then
+    cp "${BUILD_DIR}/${ENTITLEMENTS_FILE}" "${TEMP_DIR}/"
+fi
+
+# Remove entire build directory
+rm -rf "${BUILD_DIR}"
+
+# Restore entitlements.mac.plist
+mkdir -p "${BUILD_DIR}"
+if [ -f "${TEMP_DIR}/${ENTITLEMENTS_FILE}" ]; then
+    mv "${TEMP_DIR}/${ENTITLEMENTS_FILE}" "${BUILD_DIR}/"
+fi
+rm -rf "${TEMP_DIR}"
+
+rm -f "${PROJECT_DIR}/${APP_NAME}.spec"
+rm -rf "${DIST_DIR}/ExpenseTracker"
 
 if [ ! -f "${ICON_PATH}" ]; then
     echo "❌ Error: Icon file not found at ${ICON_PATH}"
