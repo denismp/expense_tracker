@@ -1,0 +1,10 @@
+Django>=5.1.7
+pandas
+openpyxl
+xlsxwriter
+psycopg2
+dotenv
+pycgi
+requests
+pystray
+psutil
