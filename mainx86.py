@@ -2,7 +2,6 @@ import os
 import sys
 import time
 import threading
-import webbrowser
 import requests
 import signal
 import shutil
@@ -157,5 +156,5 @@ if __name__ == '__main__':
             log_error("Server timeout")
             sys.exit(1)
     except Exception as e:
-        log_error("Unhandled error in main")
+        log_error("Unhandled error in main" + e)
         force_quit()
