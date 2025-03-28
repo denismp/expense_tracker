@@ -20,19 +20,30 @@ from django.core.management import execute_from_command_line
 ICON_PATH = os.path.join(os.path.dirname(sys.argv[0]), "icons/icon.icns")
 delegate = None  # Keep reference to AppDelegate
 
+# Setup log directory and file
 LOG_DIR = os.path.expanduser("~/Library/Application Support/ExpenseTracker")
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, "output.log")
 
 
+def log_message(msg):
+    """Log a general informational message."""
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+    except Exception as e:
+        print(f"Failed to log message: {e}")
+
+
 def log_error(msg):
+    """Log an error message along with the traceback."""
     try:
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write("=== ERROR ===\n")
             f.write(msg + "\n")
             f.write(traceback.format_exc() + "\n")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Failed to log error: {e}")
 
 
 def ensure_writable_database():
@@ -77,24 +88,27 @@ def set_app_icon_and_delegate():
     """Setup NSApp, icon, bounce, and delegate for Dock quit handling."""
     global delegate
 
-    app = NSApplication.sharedApplication()
-    app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
+    try:
+        app = NSApplication.sharedApplication()
+        app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
 
-    delegate = AppDelegate.alloc().init()
-    app.setDelegate_(delegate)
+        delegate = AppDelegate.alloc().init()
+        app.setDelegate_(delegate)
 
-    if os.path.exists(ICON_PATH):
-        image = NSImage.alloc().initWithContentsOfFile_(ICON_PATH)
-        app.setApplicationIconImage_(image)
+        if os.path.exists(ICON_PATH):
+            image = NSImage.alloc().initWithContentsOfFile_(ICON_PATH)
+            app.setApplicationIconImage_(image)
 
-    bounce_id = app.requestUserAttention_(NSCriticalRequest)
+        bounce_id = app.requestUserAttention_(NSCriticalRequest)
 
-    def stop_bounce():
-        time.sleep(2)
-        app.cancelUserAttentionRequest_(bounce_id)
+        def stop_bounce():
+            time.sleep(2)
+            app.cancelUserAttentionRequest_(bounce_id)
 
-    threading.Thread(target=stop_bounce, daemon=True).start()
-    app.finishLaunching()
+        threading.Thread(target=stop_bounce, daemon=True).start()
+        app.finishLaunching()
+    except Exception:
+        log_error("Error during set_app_icon_and_delegate")
 
 
 def start_server():
@@ -130,6 +144,13 @@ def open_browser():
 
 
 if __name__ == '__main__':
+    # Redirect stdout and stderr to the log file
+    try:
+        sys.stdout = open(LOG_FILE, "a", buffering=1)
+        sys.stderr = sys.stdout
+    except Exception as e:
+        print(f"Failed to redirect output: {e}")
+
     # Early launch marker for debugging
     try:
         with open("/tmp/expensetracker_start.log", "w") as f:
@@ -141,6 +162,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
+        log_message("App starting up")
         ensure_writable_database()
         set_app_icon_and_delegate()
 
@@ -156,5 +178,5 @@ if __name__ == '__main__':
             log_error("Server timeout")
             sys.exit(1)
     except Exception as e:
-        log_error("Unhandled error in main" + e)
+        log_error("Unhandled error in main: " + str(e))
         force_quit()
