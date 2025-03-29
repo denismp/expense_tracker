@@ -9,8 +9,11 @@ import shutil
 import traceback
 
 from AppKit import (
-    NSApplication, NSImage, NSApplicationActivationPolicyRegular,
-    NSCriticalRequest, NSObject
+    NSApplication,
+    NSImage,
+    NSApplicationActivationPolicyRegular,
+    NSCriticalRequest,
+    NSObject,
 )
 from Foundation import NSLog
 from django.core.management import execute_from_command_line
@@ -23,6 +26,33 @@ delegate = None  # Keep reference to AppDelegate
 LOG_DIR = os.path.expanduser("~/Library/Application Support/ExpenseTracker")
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, "output.log")
+RUN_COUNT_FILE = os.path.join(LOG_DIR, "run_count.txt")
+
+
+def manage_run_count():
+    """
+    Increment the run count stored in RUN_COUNT_FILE.
+    When the count reaches 5, clear the LOG_FILE and reset the counter.
+    """
+    try:
+        with open(RUN_COUNT_FILE, "r") as f:
+            count = int(f.read().strip())
+    except Exception:
+        count = 0
+
+    count += 1
+
+    if count >= 5:
+        # Clear the log file
+        with open(LOG_FILE, "w", encoding="utf-8") as f:
+            f.write("")
+        count = 0  # Reset counter
+
+    try:
+        with open(RUN_COUNT_FILE, "w", encoding="utf-8") as f:
+            f.write(str(count))
+    except Exception as e:
+        print(f"Failed to update run count: {e}")
 
 
 def log_message(msg):
@@ -46,19 +76,17 @@ def log_error(msg):
 
 
 def ensure_writable_database():
-    """Copy db.sqlite3 to user-writable location if bundled."""
+    """Copy db.sqlite3 to a user-writable location if bundled."""
     try:
-        if getattr(sys, 'frozen', False):
-            bundled_db_path = os.path.join(sys._MEIPASS, 'db.sqlite3')
-            writable_db_path = os.path.join(LOG_DIR, 'db.sqlite3')
-
+        if getattr(sys, "frozen", False):
+            bundled_db_path = os.path.join(sys._MEIPASS, "db.sqlite3")
+            writable_db_path = os.path.join(LOG_DIR, "db.sqlite3")
             if not os.path.exists(writable_db_path):
                 print("📄 Copying db.sqlite3 to writable location...")
                 shutil.copy2(bundled_db_path, writable_db_path)
             else:
                 print("📂 Using existing writable database.")
-
-            os.environ['DJANGO_DB_PATH'] = writable_db_path
+            os.environ["DJANGO_DB_PATH"] = writable_db_path
     except Exception:
         log_error("Failed to ensure writable DB")
 
@@ -89,18 +117,14 @@ class AppDelegate(NSObject):
 def set_app_icon_and_delegate():
     """Setup NSApp, icon, bounce, and delegate for Dock quit handling."""
     global delegate
-
     try:
         app = NSApplication.sharedApplication()
         app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
-
         delegate = AppDelegate.alloc().init()
         app.setDelegate_(delegate)
-
         if os.path.exists(ICON_PATH):
             image = NSImage.alloc().initWithContentsOfFile_(ICON_PATH)
             app.setApplicationIconImage_(image)
-
         bounce_id = app.requestUserAttention_(NSCriticalRequest)
 
         def stop_bounce():
@@ -116,8 +140,10 @@ def set_app_icon_and_delegate():
 def start_server():
     """Start the Django server in a thread."""
     try:
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'expense_tracker.settings')
-        execute_from_command_line(['manage.py', 'runserver', '127.0.0.1:8000', '--noreload'])
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "expense_tracker.settings")
+        execute_from_command_line(
+            ["manage.py", "runserver", "127.0.0.1:8000", "--noreload"]
+        )
     except Exception:
         log_error("Failed to start Django server")
         force_quit()
@@ -125,14 +151,14 @@ def start_server():
 
 def wait_for_server(url, timeout=30):
     """Wait for the server to be ready."""
-    start = time.time()
+    start_time = time.time()
     while True:
         try:
-            requests.get(url)
-            return True
+            if requests.get(url).status_code < 400:
+                return True
         except requests.ConnectionError:
             pass
-        if time.time() - start > timeout:
+        if time.time() - start_time > timeout:
             return False
         time.sleep(1)
 
@@ -145,7 +171,10 @@ def open_browser():
         log_error("Failed to open browser")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    # Manage run count and reset log file if needed
+    manage_run_count()
+
     # Redirect stdout and stderr to the log file
     try:
         sys.stdout = open(LOG_FILE, "a", buffering=1)
