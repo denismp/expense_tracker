@@ -7,6 +7,7 @@ import signal
 import shutil
 import traceback
 import subprocess
+import webbrowser
 
 from AppKit import (
     NSApplication, NSImage, NSApplicationActivationPolicyRegular,
@@ -24,6 +25,33 @@ delegate = None  # Keep reference to AppDelegate
 LOG_DIR = os.path.expanduser("~/Library/Application Support/ExpenseTracker")
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, "output.log")
+RUN_COUNT_FILE = os.path.join(LOG_DIR, "run_count.txt")
+
+
+def manage_run_count():
+    """
+    Increment the run count stored in RUN_COUNT_FILE.
+    If the count reaches 5, clear the LOG_FILE and reset the counter.
+    """
+    try:
+        with open(RUN_COUNT_FILE, "r") as f:
+            count = int(f.read().strip())
+    except Exception:
+        count = 0
+
+    count += 1
+
+    if count >= 5:
+        # Clear the log file
+        with open(LOG_FILE, "w", encoding="utf-8") as f:
+            f.write("")  # clear its contents
+        count = 0  # reset count
+
+    try:
+        with open(RUN_COUNT_FILE, "w", encoding="utf-8") as f:
+            f.write(str(count))
+    except Exception as e:
+        print(f"Failed to update run count: {e}")
 
 
 def log_message(msg):
@@ -121,29 +149,43 @@ def start_server():
         force_quit()
 
 
-def wait_for_server(url, timeout=30):
-    """Wait for the server to be ready."""
-    start = time.time()
+def wait_for_server(url, timeout=60):
+    """
+    Wait for the server to be ready.
+    Accept any HTTP status below 400.
+    """
+    start_time = time.time()
     while True:
         try:
-            requests.get(url)
-            return True
-        except requests.ConnectionError:
-            pass
-        if time.time() - start > timeout:
+            response = requests.get(url, timeout=5)
+            log_message(f"Attempt to connect returned status {response.status_code}")
+            if response.status_code < 400:
+                return True
+            else:
+                log_message("Server returned an error status; retrying...")
+        except Exception as e:
+            log_message("Connection attempt failed: " + str(e))
+        if time.time() - start_time > timeout:
             return False
         time.sleep(1)
 
 
 def open_browser():
-    """Open the default browser to the app URL using macOS-safe call."""
+    """Open the default browser to the app URL."""
     try:
-        subprocess.run(["open", "http://127.0.0.1:8000"])
-    except Exception:
-        log_error("Failed to open browser")
+        # Try using the webbrowser module
+        success = webbrowser.open("http://127.0.0.1:8000")
+        if not success:
+            log_message("webbrowser.open() did not return success; trying subprocess.")
+            subprocess.Popen(["open", "http://127.0.0.1:8000"])
+    except Exception as e:
+        log_error("Failed to open browser: " + str(e))
 
 
 if __name__ == '__main__':
+    # Manage run count and reset log if needed
+    manage_run_count()
+
     # Redirect stdout and stderr to the log file
     try:
         sys.stdout = open(LOG_FILE, "a", buffering=1)
@@ -174,7 +216,7 @@ if __name__ == '__main__':
             open_browser()
             NSApplication.sharedApplication().run()
         else:
-            print("❌ Error: Server did not start within 30 seconds.")
+            print("❌ Error: Server did not start within the timeout period.")
             log_error("Server timeout")
             sys.exit(1)
     except Exception as e:
