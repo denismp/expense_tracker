@@ -1,8 +1,14 @@
 #!/bin/bash
 
+# Step 0: Clean previous build artifacts early
+PROJECT_DIR="${HOME}/git/expense_tracker"
+echo "🧹 Cleaning previous build artifacts..."
+rm -rf "${PROJECT_DIR}/dist"
+rm -rf "${PROJECT_DIR}/build/ExpenseTracker"
+mkdir -p "${PROJECT_DIR}/dist"
+
 # Define variables
 APP_NAME="ExpenseTracker"
-PROJECT_DIR="${HOME}/git/expense_tracker"
 APP_PATH="${PROJECT_DIR}/dist/${APP_NAME}.app"
 DMG_NAME="${APP_NAME}.dmg"
 DMG_PATH="${PROJECT_DIR}/dist/${DMG_NAME}"
@@ -19,6 +25,7 @@ PYINSTALLER_CMD="pyinstaller --onefile --windowed --name=ExpenseTracker \
   --add-data \"expense_tracker/templates:expense_tracker/templates\" \
   --add-data \"expense_tracker/apps/expenses/templates:expense_tracker/apps/expenses/templates\" \
   --add-data \"expense_tracker/apps/accounts/templates:expense_tracker/apps/accounts/templates\" \
+  --add-data \".env:.env\" \
   --add-data \"db.sqlite3:.\" \
   main.py"
 
@@ -58,18 +65,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 5: Clean previous build artifacts
-echo "🗑️ Cleaning old build artifacts..."
-rm -rf "${PROJECT_DIR}/dist"
-rm -rf "${PROJECT_DIR}/build/ExpenseTracker"
-
-# Step 6: Validate the icon file exists
+# Step 5: Validate the icon file exists
 if [ ! -f "${ICON_PATH}" ]; then
     echo "❌ Error: Icon file not found at ${ICON_PATH}. Ensure it exists."
     exit 1
 fi
 
-# Step 7: Build the app with PyInstaller
+# Step 6: Build the app with PyInstaller
 echo "🚀 Building the app with PyInstaller..."
 eval "${PYINSTALLER_CMD}"
 if [ $? -ne 0 ]; then
@@ -77,29 +79,29 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 8: Ensure the .app bundle exists
+# Step 7: Ensure the .app bundle exists
 if [ ! -d "${APP_PATH}" ]; then
     echo "❌ Error: ${APP_PATH} not found. PyInstaller may have failed."
     exit 1
 fi
 
-# Step 9: Unmount any previous disk images
+# Step 8: Unmount any previous disk images
 if mount | grep -q "/Volumes/${APP_NAME}"; then
     echo "🔄 Unmounting existing DMG..."
     hdiutil detach -force "/Volumes/${APP_NAME}"
 fi
 
-# Step 10: Delete existing .dmg file if present
+# Step 9: Delete existing .dmg file if present
 if [ -f "${DMG_PATH}" ]; then
     echo "🗑️ Removing old .dmg file..."
     rm -f "${DMG_PATH}"
 fi
 
-# Step 11: Create a temporary directory for .dmg contents
+# Step 10: Create a temporary directory for .dmg contents
 echo "📁 Creating temporary directory..."
 mkdir -p "${TEMP_DIR}"
 
-# Step 12: Copy the .app bundle to the temporary directory
+# Step 11: Copy the .app bundle to the temporary directory
 echo "📂 Copying .app bundle to temporary directory..."
 cp -R "${APP_PATH}" "${TEMP_DIR}/"
 if [ $? -ne 0 ]; then
@@ -107,7 +109,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 13: Create a symbolic link to the Applications folder
+# Step 12: Create a symbolic link to the Applications folder
 echo "🔗 Creating Applications shortcut..."
 ln -s /Applications "${TEMP_DIR}/Applications"
 if [ $? -ne 0 ]; then
@@ -115,7 +117,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 14: Create the .dmg file with increased space
+# Step 13: Create the .dmg file with increased space
 echo "💾 Creating .dmg file..."
 hdiutil create -volname "${APP_NAME}" -srcfolder "${TEMP_DIR}" -ov -format UDZO -size 300m "${DMG_PATH}"
 if [ $? -ne 0 ]; then
@@ -123,7 +125,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 15: Clean up the temporary directory
+# Step 14: Clean up the temporary directory
 echo "🧹 Cleaning up..."
 rm -rf "${TEMP_DIR}"
 
