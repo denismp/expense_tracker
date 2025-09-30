@@ -7,6 +7,7 @@ import signal
 import shutil
 import traceback
 import subprocess
+import webbrowser
 
 from AppKit import (
     NSApplication, NSImage, NSApplicationActivationPolicyRegular,
@@ -20,19 +21,57 @@ from django.core.management import execute_from_command_line
 ICON_PATH = os.path.join(os.path.dirname(sys.argv[0]), "icons/icon.icns")
 delegate = None  # Keep reference to AppDelegate
 
+# Setup log directory and file
 LOG_DIR = os.path.expanduser("~/Library/Application Support/ExpenseTracker")
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, "output.log")
+RUN_COUNT_FILE = os.path.join(LOG_DIR, "run_count.txt")
+
+
+def manage_run_count():
+    """
+    Increment the run count stored in RUN_COUNT_FILE.
+    If the count reaches 5, clear the LOG_FILE and reset the counter.
+    """
+    try:
+        with open(RUN_COUNT_FILE, "r") as f:
+            count = int(f.read().strip())
+    except Exception:
+        count = 0
+
+    count += 1
+
+    if count >= 5:
+        # Clear the log file
+        with open(LOG_FILE, "w", encoding="utf-8") as f:
+            f.write("")  # clear its contents
+        count = 0  # reset count
+
+    try:
+        with open(RUN_COUNT_FILE, "w", encoding="utf-8") as f:
+            f.write(str(count))
+    except Exception as e:
+        print(f"Failed to update run count: {e}")
+
+
+def log_message(msg):
+    """Log a general informational message."""
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+    except Exception as e:
+        print(f"Failed to log message: {e}")
 
 
 def log_error(msg):
+    """Log an error message along with the traceback."""
     try:
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write("=== ERROR ===\n")
             f.write(msg + "\n")
             f.write(traceback.format_exc() + "\n")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Failed to log error: {e}")
 
 
 def ensure_writable_database():
@@ -77,24 +116,27 @@ def set_app_icon_and_delegate():
     """Setup NSApp, icon, bounce, and delegate for Dock quit handling."""
     global delegate
 
-    app = NSApplication.sharedApplication()
-    app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
+    try:
+        app = NSApplication.sharedApplication()
+        app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
 
-    delegate = AppDelegate.alloc().init()
-    app.setDelegate_(delegate)
+        delegate = AppDelegate.alloc().init()
+        app.setDelegate_(delegate)
 
-    if os.path.exists(ICON_PATH):
-        image = NSImage.alloc().initWithContentsOfFile_(ICON_PATH)
-        app.setApplicationIconImage_(image)
+        if os.path.exists(ICON_PATH):
+            image = NSImage.alloc().initWithContentsOfFile_(ICON_PATH)
+            app.setApplicationIconImage_(image)
 
-    bounce_id = app.requestUserAttention_(NSCriticalRequest)
+        bounce_id = app.requestUserAttention_(NSCriticalRequest)
 
-    def stop_bounce():
-        time.sleep(2)
-        app.cancelUserAttentionRequest_(bounce_id)
+        def stop_bounce():
+            time.sleep(2)
+            app.cancelUserAttentionRequest_(bounce_id)
 
-    threading.Thread(target=stop_bounce, daemon=True).start()
-    app.finishLaunching()
+        threading.Thread(target=stop_bounce, daemon=True).start()
+        app.finishLaunching()
+    except Exception:
+        log_error("Error during set_app_icon_and_delegate")
 
 
 def start_server():
@@ -107,29 +149,50 @@ def start_server():
         force_quit()
 
 
-def wait_for_server(url, timeout=30):
-    """Wait for the server to be ready."""
-    start = time.time()
+def wait_for_server(url, timeout=60):
+    """
+    Wait for the server to be ready.
+    Accept any HTTP status below 400.
+    """
+    start_time = time.time()
     while True:
         try:
-            requests.get(url)
-            return True
-        except requests.ConnectionError:
-            pass
-        if time.time() - start > timeout:
+            response = requests.get(url, timeout=5)
+            log_message(f"Attempt to connect returned status {response.status_code}")
+            if response.status_code < 400:
+                return True
+            else:
+                log_message("Server returned an error status; retrying...")
+        except Exception as e:
+            log_message("Connection attempt failed: " + str(e))
+        if time.time() - start_time > timeout:
             return False
         time.sleep(1)
 
 
 def open_browser():
-    """Open the default browser to the app URL using macOS-safe call."""
+    """Open the default browser to the app URL."""
     try:
-        subprocess.run(["open", "http://127.0.0.1:8000"])
-    except Exception:
-        log_error("Failed to open browser")
+        # Try using the webbrowser module
+        success = webbrowser.open("http://127.0.0.1:8000")
+        if not success:
+            log_message("webbrowser.open() did not return success; trying subprocess.")
+            subprocess.Popen(["open", "http://127.0.0.1:8000"])
+    except Exception as e:
+        log_error("Failed to open browser: " + str(e))
 
 
 if __name__ == '__main__':
+    # Manage run count and reset log if needed
+    manage_run_count()
+
+    # Redirect stdout and stderr to the log file
+    try:
+        sys.stdout = open(LOG_FILE, "a", buffering=1)
+        sys.stderr = sys.stdout
+    except Exception as e:
+        print(f"Failed to redirect output: {e}")
+
     # Early launch marker for debugging
     try:
         with open("/tmp/expensetracker_start.log", "w") as f:
@@ -141,6 +204,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
+        log_message("App starting up")
         ensure_writable_database()
         set_app_icon_and_delegate()
 
@@ -152,9 +216,9 @@ if __name__ == '__main__':
             open_browser()
             NSApplication.sharedApplication().run()
         else:
-            print("❌ Error: Server did not start within 30 seconds.")
+            print("❌ Error: Server did not start within the timeout period.")
             log_error("Server timeout")
             sys.exit(1)
     except Exception as e:
-        log_error("Unhandled error in main" + e)
+        log_error("Unhandled error in main: " + str(e))
         force_quit()

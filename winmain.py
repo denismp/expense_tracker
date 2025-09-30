@@ -27,10 +27,38 @@ except ImportError:
 tray_icon = None  # Global reference for access in on_quit()
 
 
+def manage_run_count():
+    """
+    Increment the run count stored in run_count.txt.
+    When the count reaches 5, clear output.log and reset the counter.
+    """
+    try:
+        log_dir = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "ExpenseTracker")
+        run_count_file = os.path.join(log_dir, "run_count.txt")
+        try:
+            with open(run_count_file, "r", encoding="utf-8", errors="replace") as f:
+                count = int(f.read().strip())
+        except Exception:
+            count = 0
+
+        count += 1
+
+        if count >= 5:
+            # Clear the log file
+            output_log = os.path.join(log_dir, "output.log")
+            with open(output_log, "w", encoding="utf-8", errors="replace") as f:
+                f.write("")
+            count = 0  # Reset counter
+
+        with open(run_count_file, "w", encoding="utf-8", errors="replace") as f:
+            f.write(str(count))
+    except Exception as e:
+        log_error(e)
+
+
 def ensure_writable_database():
     """
-    Ensure the database is writable by copying it to the user's AppData folder
-    if needed.
+    Ensure the database is writable by copying it to the user's AppData folder if needed.
     """
     try:
         if getattr(sys, "frozen", False):
@@ -53,7 +81,7 @@ def ensure_writable_database():
 def log_error(exception):
     """Log exceptions to 'error.log' in the %APPDATA%/ExpenseTracker folder."""
     try:
-        log_dir = os.path.join(os.getenv("APPDATA"), "ExpenseTracker")
+        log_dir = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "ExpenseTracker")
         os.makedirs(log_dir, exist_ok=True)
         error_log_path = os.path.join(log_dir, "error.log")
         with open(error_log_path, "a", encoding="utf-8", errors="replace") as f:
@@ -65,15 +93,13 @@ def log_error(exception):
 
 def redirect_output_to_log():
     """Redirect stdout and stderr to UTF-8 encoded output.log."""
-    log_dir = os.path.join(os.getenv("APPDATA", "."), "ExpenseTracker")
+    log_dir = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "ExpenseTracker")
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, "output.log")
 
     try:
         log_file = open(log_path, "a", buffering=1, encoding="utf-8", errors="replace")
-        sys.stdout = io.TextIOWrapper(
-            log_file.buffer, encoding="utf-8", line_buffering=True
-        )
+        sys.stdout = io.TextIOWrapper(log_file.buffer, encoding="utf-8", line_buffering=True)
         sys.stderr = sys.stdout
         atexit.register(log_file.close)
     except Exception as e:
@@ -139,6 +165,7 @@ def create_tray_icon():
 
 
 def main():
+    manage_run_count()
     redirect_output_to_log()
     ensure_writable_database()
 
@@ -150,7 +177,6 @@ def main():
     db_path = os.environ.get("DJANGO_DB_PATH")
     if db_path:
         from django.conf import settings
-
         settings.DATABASES["default"]["NAME"] = db_path
 
     server_thread = threading.Thread(
